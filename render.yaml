@@ -1,0 +1,24 @@
+services:
+  # 后端 API 服务
+  - type: web
+    name: tldr-chinese-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: DEEPL_API_KEY
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+
+  # 前端静态网站
+  - type: web
+    name: tldr-chinese-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://tldr-chinese-api.onrender.com

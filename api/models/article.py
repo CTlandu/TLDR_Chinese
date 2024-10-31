@@ -1,7 +1,5 @@
-from flask_mongoengine import MongoEngine
+from api import db
 from datetime import datetime
-
-db = MongoEngine()
 
 class DailyNewsletter(db.Document):
     date = db.DateTimeField(required=True, unique=True)
@@ -9,9 +7,11 @@ class DailyNewsletter(db.Document):
     created_at = db.DateTimeField(default=datetime.utcnow)
     
     meta = {
-        'collection': 'daily_newsletters',
-        'indexes': ['date'],
-        'ordering': ['-date']
+        'collection': 'newsletters',
+        'ordering': ['-date'],
+        'indexes': [
+            'date'
+        ]
     }
     
     def to_dict(self):
