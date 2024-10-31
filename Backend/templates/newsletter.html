@@ -1,0 +1,138 @@
+<!-- prettier-ignore -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>TLDR Newsletter</title>
+    <style>
+      body {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        line-height: 1.6;
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      h2 {
+        margin-top: 30px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #eee;
+        color: #444;
+      }
+      h3 {
+        margin-top: 30px;
+        margin-bottom: 10px;
+        color: #222;
+      }
+      a {
+        color: #0066cc;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      p {
+        margin: 15px 0;
+        color: #555;
+      }
+      .navbar {
+        background: #f8f9fa;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .navbar ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+      }
+      .navbar a {
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+      }
+      .navbar a:hover {
+        background-color: #e9ecef;
+        text-decoration: none;
+      }
+      .navbar a.active {
+        background-color: #0066cc;
+        color: white;
+      }
+      
+      .translation.show-original .translated {
+        display: none;
+      }
+      
+      .translation .original {
+        display: none;
+      }
+      
+      .translation.show-original .original {
+        display: block;
+        color: #666;
+      }
+      
+      blockquote.original-text {
+        border-left: 4px solid #ddd;
+        margin: 15px 0;
+        padding: 10px 20px;
+        color: #666;
+        background: #f9f9f9;
+      }
+      
+      blockquote:not(.original-text) {
+        border-left: 4px solid #0066cc;
+        margin: 8px 0;
+        padding: 0 15px;
+        color: #666;
+      }
+      
+      h3 + blockquote {
+        margin-top: 5px;
+        font-style: italic;
+      }
+      
+      hr {
+        margin: 30px 0;
+        border: none;
+        border-top: 1px solid #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <ul>
+        {% for date in dates %}
+          <li>
+            <a href="{{ url_for('main.show_newsletter_by_date', date=date) }}"
+               {% if date == current_date %}class="active"{% endif %}>
+              {{ date }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </nav>
+
+    <h1>TLDR Newsletter - {{ current_date }}</h1>
+
+    <!-- 调试信息 -->
+    <div style="background: #f5f5f5; padding: 10px; margin: 10px 0;">
+        <p>Debug Info:</p>
+        <pre>{{ emails | tojson }}</pre>
+    </div>
+
+    {% for section in emails %}
+        <h2>{{ section.section }}</h2>
+        {{ section.content | safe }}
+    {% endfor %}
+  </body>
+</html>
