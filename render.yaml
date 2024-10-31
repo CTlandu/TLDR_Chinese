@@ -3,7 +3,7 @@ services:
     name: tldr-chinese-api
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -c gunicorn_config.py run:app
+    startCommand: gunicorn run:app --bind=0.0.0.0:10000 --workers=4 --threads=4 --timeout=120
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
