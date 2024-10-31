@@ -10,7 +10,10 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["https://tldr-chinese.onrender.com"],
+            "origins": [
+                "https://tldr-chinese-frontend.onrender.com",
+                "http://localhost:5173"
+            ],
             "methods": ["GET", "POST", "OPTIONS"],
             "allow_headers": ["Content-Type"]
         }
