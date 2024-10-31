@@ -8,11 +8,14 @@
   ],
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/api/(.*)",
       "dest": "run.py"
     }
   ],
   "env": {
     "PYTHONPATH": "."
-  }
+  },
+  "buildCommand": "pip install -r requirements.txt",
+  "outputDirectory": ".",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./Backend/"
 }
