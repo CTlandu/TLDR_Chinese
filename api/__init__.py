@@ -8,16 +8,21 @@ db = MongoEngine()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": [
-                "https://tldr-chinese-frontend.onrender.com",
-                "http://localhost:5173"
-            ],
-            "methods": ["GET", "POST", "OPTIONS"],
-            "allow_headers": ["Content-Type"]
-        }
-    })
+    
+    # 根据环境设置 CORS
+    if app.config['DEBUG']:
+        # 开发环境
+        CORS(app)
+    else:
+        # 生产环境
+        CORS(app, resources={
+            r"/api/*": {
+                "origins": ["https://tldr-chinese-frontend.onrender.com"],
+                "methods": ["GET", "POST", "OPTIONS"],
+                "allow_headers": ["Content-Type"]
+            }
+        })
+    
     app.config.from_object(config_class)
     
      # 初始化 Markdown
