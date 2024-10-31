@@ -81,7 +81,8 @@
 
 <script>
 import axios from "axios";
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://tldr-chinese-api.onrender.com";
 
 export default {
   name: "NewsletterView",
@@ -100,10 +101,8 @@ export default {
     async fetchData() {
       this.loading = true;
       try {
-        const date = this.$route.params.date || "2024-10-31";
-        const response = await axios.get(
-          `http://localhost:5000/api/newsletter/${date}`
-        );
+        const date = this.$route.params.date || "2024-03-19";
+        const response = await axios.get(`${API_URL}/api/newsletter/${date}`);
 
         this.currentDate = response.data.currentDate;
         this.dates = response.data.dates;
