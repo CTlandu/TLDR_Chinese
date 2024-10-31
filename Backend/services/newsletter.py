@@ -6,14 +6,39 @@ from functools import lru_cache
 import time
 from ..services.translator import TranslatorService
 from flask import current_app
-from ..models.article import Article
+from ..models.article import DailyNewsletter
 import logging
 
 @lru_cache(maxsize=128)
-def get_newsletter(date=None, timestamp=None):
-    if timestamp is None:
-        timestamp = time.strftime('%Y%m%d')
-    return fetch_tldr_content(date)
+def get_newsletter(date=None):
+    if date is None:
+        et = pytz.timezone('US/Eastern')
+        date = datetime.now(et).strftime('%Y-%m-%d')
+    
+    # 先查询数据库
+    try:
+        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        newsletter = DailyNewsletter.objects(date=date_obj).first()
+        if newsletter:
+            logging.info(f"Found newsletter for {date} in database")
+            return newsletter.sections
+    except Exception as e:
+        logging.error(f"Error querying database: {str(e)}")
+    
+    # 如果数据库中没有，则获取新数据
+    articles = fetch_tldr_content(date)
+    if articles:
+        try:
+            newsletter = DailyNewsletter(
+                date=date_obj,
+                sections=articles
+            )
+            newsletter.save()
+            logging.info(f"Saved newsletter for {date} to database")
+        except Exception as e:
+            logging.error(f"Error saving to database: {str(e)}")
+    
+    return articles
 
 def fetch_tldr_content(date=None):
     if date is None:
@@ -70,22 +95,19 @@ def fetch_tldr_content(date=None):
                     logging.info(f"Processed article: {title}")
                     
                     # 构建双语内容
-                    article_content = f"""### [{title_zh}]({url})
-> {title}
-
-{content_html_zh}
-
-<blockquote class="original-text">
-{content_html}
-</blockquote>
-
----"""
+                    article_content = {
+                        'title': title_zh,
+                        'title_en': title,
+                        'content': content_html_zh,
+                        'content_en': content_html,
+                        'url': url
+                    }
                     section_content.append(article_content)
                 
                 if section_content:
                     articles.append({
                         'section': section_title,
-                        'content': ''.join(section_content)
+                        'articles': section_content
                     })
             
             logging.info(f"Returning {len(articles)} articles")
