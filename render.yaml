@@ -9,3 +9,12 @@ services:
         value: 3.9.0
       - key: FLASK_ENV
         value: production
+
+  - type: static
+    name: tldr-chinese-frontend
+    env: node
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://tldr-chinese-api.onrender.com
