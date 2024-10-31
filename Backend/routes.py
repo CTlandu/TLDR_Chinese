@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, jsonify
 from .services.newsletter import get_newsletter
 from datetime import datetime
 import pytz
 from datetime import timedelta
+from flask_cors import CORS
 
 bp = Blueprint('main', __name__)
 
@@ -31,3 +32,14 @@ def show_newsletter_by_date(date):
     articles = get_newsletter(date)
     dates = get_available_dates()
     return render_template('newsletter.html', emails=articles, current_date=date, dates=dates)
+
+@bp.route('/api/newsletter/<date>')
+def get_newsletter_data(date):
+    articles = get_newsletter(date)
+    dates = get_available_dates()
+    
+    return jsonify({
+        'currentDate': date,
+        'dates': dates,
+        'articles': articles
+    })
