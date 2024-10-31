@@ -9,6 +9,10 @@ services:
         value: 3.9.0
       - key: FLASK_ENV
         value: production
+      - key: DEEPL_API_KEY
+        sync: false
+      - key: MONGODB_URI
+        sync: false
 
   - type: static
     name: tldr-chinese-frontend
