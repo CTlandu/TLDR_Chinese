@@ -13,8 +13,10 @@ services:
   - type: static
     name: tldr-chinese-frontend
     env: node
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
     envVars:
+      - key: NODE_VERSION
+        value: 18.x
       - key: VITE_API_URL
         value: https://tldr-chinese-api.onrender.com
