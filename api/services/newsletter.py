@@ -8,6 +8,7 @@ from ..services.translator import TranslatorService
 from flask import current_app
 from ..models.article import DailyNewsletter
 import logging
+import json
 
 @lru_cache(maxsize=128)
 def get_newsletter(date=None):
@@ -15,17 +16,15 @@ def get_newsletter(date=None):
         et = pytz.timezone('US/Eastern')
         date = datetime.now(et).strftime('%Y-%m-%d')
     
-    # 先查询数据库
     try:
         date_obj = datetime.strptime(date, '%Y-%m-%d')
         newsletter = DailyNewsletter.objects(date=date_obj).first()
         if newsletter:
             logging.info(f"Found newsletter for {date} in database")
-            return newsletter.sections
+            return json.loads(json.dumps(newsletter.sections, ensure_ascii=False))
     except Exception as e:
         logging.error(f"Error querying database: {str(e)}")
     
-    # 如果数据库中没有，则获取新数据
     articles = fetch_tldr_content(date)
     if articles:
         try:
@@ -35,10 +34,11 @@ def get_newsletter(date=None):
             )
             newsletter.save()
             logging.info(f"Saved newsletter for {date} to database")
+            return json.loads(json.dumps(articles, ensure_ascii=False))
         except Exception as e:
             logging.error(f"Error saving to database: {str(e)}")
     
-    return articles
+    return []
 
 def fetch_tldr_content(date=None):
     if date is None:
