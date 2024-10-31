@@ -103,13 +103,32 @@ export default {
         const date = this.$route.params.date || "2024-03-19";
         const response = await axios.get(`${API_URL}/api/newsletter/${date}`);
 
+        // 确保数据正确解码
         this.currentDate = response.data.currentDate;
         this.dates = response.data.dates;
-        this.articles = response.data.articles;
+        this.articles = response.data.articles.map((section) => ({
+          ...section,
+          articles: section.articles.map((article) => ({
+            ...article,
+            title: this.decodeString(article.title),
+            content: this.decodeString(article.content),
+          })),
+        }));
       } catch (error) {
         console.error("Error fetching newsletter:", error);
       } finally {
         this.loading = false;
+      }
+    },
+
+    decodeString(str) {
+      try {
+        // 处理可能的 Unicode 转义序列
+        return str.replace(/\\u[\dA-F]{4}/gi, (match) =>
+          String.fromCharCode(parseInt(match.replace(/\\u/g, ""), 16))
+        );
+      } catch (e) {
+        return str;
       }
     },
   },
