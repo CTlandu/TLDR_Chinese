@@ -1,6 +1,9 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 
+// 获取环境变量
+const API_URL = process.env.VITE_API_URL || "http://localhost:5000";
+
 export default defineConfig({
   plugins: [vue()],
   base: "/",
@@ -16,7 +19,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: env.VITE_API_URL || "http://localhost:5000",
+        target: API_URL,
         changeOrigin: true,
       },
     },
