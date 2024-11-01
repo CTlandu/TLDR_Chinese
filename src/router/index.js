@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import NewsletterView from "../views/NewsletterView.vue";
+import NotFound from "../views/NotFound.vue";
 
 const routes = [
   {
@@ -12,8 +13,9 @@ const routes = [
     redirect: "/newsletter",
   },
   {
-    path: "/index.html",
-    redirect: "/newsletter",
+    path: "/:pathMatch(.*)*",
+    name: "not-found",
+    component: NotFound,
   },
 ];
 

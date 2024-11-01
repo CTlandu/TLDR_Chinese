@@ -105,14 +105,13 @@ export default {
     async fetchData() {
       this.loading = true;
       try {
-        // 获取当前路径中的日期参数
         const date = this.$route.params.date;
 
-        // 如果没有日期参数且是首次加载，才设置今天的日期
-        if (!date && !this.currentDate) {
+        // 只有访问 /newsletter 时才重定向到今天的日期
+        if (this.$route.path === "/newsletter") {
           const today = new Date().toISOString().split("T")[0];
           this.$router.replace(`/newsletter/${today}`);
-          return; // 让路由变化触发新的 fetchData
+          return;
         }
 
         const API_URL =
@@ -120,7 +119,6 @@ export default {
             ? "http://localhost:5000"
             : "https://tldr-chinese-backend.onrender.com";
 
-        console.log("Using API URL:", API_URL);
         const response = await axios.get(`${API_URL}/api/newsletter/${date}`);
         this.articles = response.data.articles;
         this.dates = response.data.dates;
