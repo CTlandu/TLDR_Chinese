@@ -12,33 +12,35 @@ import json
 
 @lru_cache(maxsize=128)
 def get_newsletter(date=None):
-    if date is None:
-        et = pytz.timezone('US/Eastern')
-        date = datetime.now(et).strftime('%Y-%m-%d')
-    
+    logging.info(f"Attempting to get newsletter for date: {date}")
     try:
         date_obj = datetime.strptime(date, '%Y-%m-%d')
+        if date_obj > datetime.now():
+            logging.warning(f"Future date requested: {date}")
+            return []
+            
         newsletter = DailyNewsletter.objects(date=date_obj).first()
         if newsletter:
-            logging.info(f"Found newsletter for {date} in database")
+            logging.info(f"Found newsletter in database for {date}")
             return json.loads(json.dumps(newsletter.sections, ensure_ascii=False))
+            
+        logging.info(f"Newsletter not found in database, fetching from source")
+        articles = fetch_tldr_content(date)
+        if articles:
+            try:
+                newsletter = DailyNewsletter(
+                    date=date_obj,
+                    sections=articles
+                )
+                newsletter.save()
+                logging.info(f"Successfully saved newsletter to database")
+                return json.loads(json.dumps(articles, ensure_ascii=False))
+            except Exception as e:
+                logging.error(f"Database save error: {str(e)}")
+                return articles
     except Exception as e:
-        logging.error(f"Error querying database: {str(e)}")
-    
-    articles = fetch_tldr_content(date)
-    if articles:
-        try:
-            newsletter = DailyNewsletter(
-                date=date_obj,
-                sections=articles
-            )
-            newsletter.save()
-            logging.info(f"Saved newsletter for {date} to database")
-            return json.loads(json.dumps(articles, ensure_ascii=False))
-        except Exception as e:
-            logging.error(f"Error saving to database: {str(e)}")
-    
-    return []
+        logging.error(f"Error in get_newsletter: {str(e)}")
+        return []
 
 def fetch_tldr_content(date=None):
     if date is None:

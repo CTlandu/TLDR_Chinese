@@ -107,11 +107,11 @@ export default {
       try {
         const date = this.$route.params.date;
 
-        // 只有访问 /newsletter 时才重定向到今天的日期
-        if (this.$route.path === "/newsletter") {
-          const today = new Date().toISOString().split("T")[0];
-          this.$router.replace(`/newsletter/${today}`);
-          return;
+        // 验证日期是否有效且不是未来日期
+        const requestDate = new Date(date);
+        const today = new Date();
+        if (isNaN(requestDate.getTime()) || requestDate > today) {
+          throw new Error("无效的日期或未来日期");
         }
 
         const API_URL =
@@ -126,7 +126,7 @@ export default {
       } catch (error) {
         console.error("Error details:", error);
         this.articles = [];
-        this.error = "获取数据失败，请稍后重试";
+        this.error = "获取数据失败：" + error.message;
       } finally {
         this.loading = false;
       }
