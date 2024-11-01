@@ -18,6 +18,7 @@ services:
     name: tldr-chinese-frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
+    spa: true
     routes:
       - type: rewrite
         source: /*
@@ -36,4 +37,4 @@ services:
       - key: NODE_VERSION
         value: 18
       - key: VITE_API_URL
-        value: https://tldr-chinese-api.onrender.com
+        value: https://tldr-chinese-backend.onrender.com

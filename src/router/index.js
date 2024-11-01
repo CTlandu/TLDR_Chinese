@@ -17,6 +17,10 @@ const routes = [
       return `/newsletter/${new Date().toISOString().split("T")[0]}`;
     },
   },
+  {
+    path: "/:pathMatch(.*)*",
+    redirect: "/newsletter",
+  },
 ];
 
 const router = createRouter({
