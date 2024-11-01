@@ -14,14 +14,6 @@ const routes = [
       return `/newsletter/${today}`;
     },
   },
-  // 捕获所有其他路由
-  {
-    path: "/:pathMatch(.*)*",
-    redirect: () => {
-      const today = new Date().toISOString().split("T")[0];
-      return `/newsletter/${today}`;
-    },
-  },
 ];
 
 const router = createRouter({
