@@ -8,7 +8,11 @@ const routes = [
     component: NewsletterView,
   },
   {
-    path: "/:pathMatch(.*)*",
+    path: "/",
+    redirect: "/newsletter",
+  },
+  {
+    path: "/index.html",
     redirect: "/newsletter",
   },
 ];

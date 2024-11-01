@@ -105,12 +105,14 @@ export default {
     async fetchData() {
       this.loading = true;
       try {
-        let date = this.$route.params.date;
+        // 获取当前路径中的日期参数
+        const date = this.$route.params.date;
 
-        // 只有在完全没有路由参数时（即访问 /newsletter 时）才使用今天的日期
-        if (this.$route.path === "/newsletter") {
-          date = new Date().toISOString().split("T")[0];
-          this.$router.replace(`/newsletter/${date}`);
+        // 如果没有日期参数且是首次加载，才设置今天的日期
+        if (!date && !this.currentDate) {
+          const today = new Date().toISOString().split("T")[0];
+          this.$router.replace(`/newsletter/${today}`);
+          return; // 让路由变化触发新的 fetchData
         }
 
         const API_URL =
