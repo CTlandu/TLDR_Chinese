@@ -24,4 +24,14 @@ const router = createRouter({
   routes,
 });
 
+// 添加导航守卫
+router.beforeEach((to, from, next) => {
+  console.log("Route change:", {
+    from: from.fullPath,
+    to: to.fullPath,
+    params: to.params,
+  });
+  next();
+});
+
 export default router;

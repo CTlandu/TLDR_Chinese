@@ -1,90 +1,96 @@
 <template>
-  <div class="max-w-3xl mx-auto px-4 py-8">
-    <!-- 导航栏 -->
-    <nav class="bg-white p-6 mb-8 rounded-xl shadow-lg">
-      <ul class="flex flex-wrap gap-2 justify-center">
-        <li v-for="date in dates" :key="date">
-          <router-link
-            :to="'/newsletter/' + date"
-            :class="[
-              'px-5 py-2.5 rounded-lg font-medium transition-all duration-300',
-              'hover:bg-gray-100 hover:-translate-y-0.5',
-              date === currentDate
-                ? 'bg-primary text-white shadow-md shadow-primary/30'
-                : 'bg-gray-50 text-gray-600',
-            ]"
-          >
-            {{ date }}
-          </router-link>
-        </li>
-      </ul>
-    </nav>
+  <ErrorBoundary @retry="fetchData">
+    <div class="max-w-3xl mx-auto px-4 py-8">
+      <!-- 导航栏 -->
+      <nav class="bg-white p-6 mb-8 rounded-xl shadow-lg">
+        <ul class="flex flex-wrap gap-2 justify-center">
+          <li v-for="date in dates" :key="date">
+            <router-link
+              :to="'/newsletter/' + date"
+              :class="[
+                'px-5 py-2.5 rounded-lg font-medium transition-all duration-300',
+                'hover:bg-gray-100 hover:-translate-y-0.5',
+                date === currentDate
+                  ? 'bg-primary text-white shadow-md shadow-primary/30'
+                  : 'bg-gray-50 text-gray-600',
+              ]"
+            >
+              {{ date }}
+            </router-link>
+          </li>
+        </ul>
+      </nav>
 
-    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">
-      TLDR Newsletter - {{ currentDate }}
-    </h1>
+      <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">
+        TLDR Newsletter - {{ currentDate }}
+      </h1>
 
-    <!-- 加载状态 -->
-    <div
-      v-if="loading"
-      class="flex flex-col items-center justify-center min-h-[300px]"
-    >
+      <!-- 加载状态 -->
       <div
-        class="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"
-      ></div>
-      <p class="mt-4 text-lg text-gray-600">正在获取内容，请稍候...</p>
-    </div>
-
-    <!-- 内容区域 -->
-    <div v-else>
-      <div v-for="section in articles" :key="section.section" class="mb-12">
-        <h2
-          class="text-2xl font-bold text-gray-700 pb-3 border-b-2 border-gray-100 mb-6"
-        >
-          {{ section.section }}
-        </h2>
-
+        v-if="loading"
+        class="flex flex-col items-center justify-center min-h-[300px]"
+      >
         <div
-          v-for="article in section.articles"
-          :key="article.url"
-          class="mb-8"
-        >
-          <div class="mb-4">
-            <a
-              :href="article.url"
-              target="_blank"
-              class="text-xl font-bold text-primary hover:underline block mb-1"
-            >
-              {{ article.title }}
-            </a>
-            <div class="text-gray-600 italic">{{ article.title_en }}</div>
-          </div>
+          class="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"
+        ></div>
+        <p class="mt-4 text-lg text-gray-600">正在获取内容，请稍候...</p>
+      </div>
 
-          <div class="space-y-4">
-            <div
-              class="text-gray-800 leading-relaxed"
-              v-html="article.content"
-            ></div>
-            <blockquote
-              class="bg-gray-50 p-4 border-l-4 border-primary text-gray-600"
-            >
-              <div v-html="article.content_en"></div>
-            </blockquote>
-          </div>
+      <!-- 内容区域 -->
+      <div v-else>
+        <div v-for="section in articles" :key="section.section" class="mb-12">
+          <h2
+            class="text-2xl font-bold text-gray-700 pb-3 border-b-2 border-gray-100 mb-6"
+          >
+            {{ section.section }}
+          </h2>
 
-          <div class="my-8 border-b border-gray-100"></div>
+          <div
+            v-for="article in section.articles"
+            :key="article.url"
+            class="mb-8"
+          >
+            <div class="mb-4">
+              <a
+                :href="article.url"
+                target="_blank"
+                class="text-xl font-bold text-primary hover:underline block mb-1"
+              >
+                {{ article.title }}
+              </a>
+              <div class="text-gray-600 italic">{{ article.title_en }}</div>
+            </div>
+
+            <div class="space-y-4">
+              <div
+                class="text-gray-800 leading-relaxed"
+                v-html="article.content"
+              ></div>
+              <blockquote
+                class="bg-gray-50 p-4 border-l-4 border-primary text-gray-600"
+              >
+                <div v-html="article.content_en"></div>
+              </blockquote>
+            </div>
+
+            <div class="my-8 border-b border-gray-100"></div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </ErrorBoundary>
 </template>
 
 <script>
 import axios from "axios";
+import ErrorBoundary from "../components/ErrorBoundary.vue";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default {
   name: "NewsletterView",
+  components: {
+    ErrorBoundary,
+  },
   data() {
     return {
       currentDate: "",
@@ -100,23 +106,25 @@ export default {
     async fetchData() {
       this.loading = true;
       try {
+        console.log("Fetching data for date:", this.$route.params.date);
         const date =
           this.$route.params.date || new Date().toISOString().split("T")[0];
-        const response = await axios.get(`${API_URL}/api/newsletter/${date}`);
-
-        // 确保数据正确解码
-        this.currentDate = response.data.currentDate;
+        console.log("API URL:", import.meta.env.VITE_API_URL);
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/newsletter/${date}`
+        );
+        console.log("API Response:", response.data);
+        this.articles = response.data.articles;
         this.dates = response.data.dates;
-        this.articles = response.data.articles.map((section) => ({
-          ...section,
-          articles: section.articles.map((article) => ({
-            ...article,
-            title: this.decodeString(article.title),
-            content: this.decodeString(article.content),
-          })),
-        }));
       } catch (error) {
-        console.error("Error fetching newsletter:", error);
+        console.error("Error details:", {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data,
+          config: error.config,
+        });
+        this.articles = [];
+        this.error = "获取数据失败，请稍后重试";
       } finally {
         this.loading = false;
       }
