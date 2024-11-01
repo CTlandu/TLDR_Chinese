@@ -8,6 +8,7 @@ db = MongoEngine()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
+    app.config['JSON_AS_ASCII'] = False  # 添加这行
     
     # 允许所有来源的 CORS 请求
     CORS(app, resources={

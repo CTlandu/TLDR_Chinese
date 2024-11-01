@@ -32,4 +32,6 @@ def get_newsletter_by_date(date):
         'dates': dates
     }
     
-    return jsonify(response), 200, {'Content-Type': 'application/json; charset=utf-8'}
+    return jsonify(response), 200, {
+        'Content-Type': 'application/json; charset=utf-8'
+    }
