@@ -9,33 +9,24 @@ const routes = [
   },
   {
     path: "/",
-    redirect: "/newsletter",
-  },
-  {
-    path: "/newsletter",
     redirect: () => {
-      return `/newsletter/${new Date().toISOString().split("T")[0]}`;
+      const today = new Date().toISOString().split("T")[0];
+      return `/newsletter/${today}`;
     },
   },
+  // 捕获所有其他路由
   {
     path: "/:pathMatch(.*)*",
-    redirect: "/newsletter",
+    redirect: () => {
+      const today = new Date().toISOString().split("T")[0];
+      return `/newsletter/${today}`;
+    },
   },
 ];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
-});
-
-// 添加导航守卫
-router.beforeEach((to, from, next) => {
-  console.log("Route change:", {
-    from: from.fullPath,
-    to: to.fullPath,
-    params: to.params,
-  });
-  next();
 });
 
 export default router;

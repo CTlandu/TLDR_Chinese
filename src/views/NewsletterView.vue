@@ -108,10 +108,14 @@ export default {
         console.log("Fetching data for date:", this.$route.params.date);
         const date =
           this.$route.params.date || new Date().toISOString().split("T")[0];
-        console.log("API URL:", import.meta.env.VITE_API_URL);
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/newsletter/${date}`
-        );
+        // 硬编码 API URL 用于测试
+        const API_URL =
+          window.location.hostname === "localhost"
+            ? "http://localhost:5000"
+            : "https://tldr-chinese-backend.onrender.com";
+
+        console.log("Using API URL:", API_URL);
+        const response = await axios.get(`${API_URL}/api/newsletter/${date}`);
         console.log("API Response:", response.data);
         this.articles = response.data.articles;
         this.dates = response.data.dates;
