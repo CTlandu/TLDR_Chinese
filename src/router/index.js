@@ -3,13 +3,19 @@ import NewsletterView from "../views/NewsletterView.vue";
 
 const routes = [
   {
-    path: "/newsletter/:date",
+    path: "/newsletter/:date?",
     name: "newsletter",
     component: NewsletterView,
   },
   {
     path: "/",
-    redirect: "/newsletter/2024-10-31", // 默认日期
+    redirect: "/newsletter",
+  },
+  {
+    path: "/newsletter",
+    redirect: () => {
+      return `/newsletter/${new Date().toISOString().split("T")[0]}`;
+    },
   },
 ];
 

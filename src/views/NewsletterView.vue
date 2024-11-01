@@ -100,7 +100,8 @@ export default {
     async fetchData() {
       this.loading = true;
       try {
-        const date = this.$route.params.date || "2024-03-19";
+        const date =
+          this.$route.params.date || new Date().toISOString().split("T")[0];
         const response = await axios.get(`${API_URL}/api/newsletter/${date}`);
 
         // 确保数据正确解码
