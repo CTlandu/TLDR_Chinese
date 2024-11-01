@@ -21,10 +21,7 @@ services:
     spa: true
     routes:
       - type: rewrite
-        source: /newsletter/*
-        destination: /index.html
-      - type: rewrite
-        source: /
+        source: /*
         destination: /index.html
     headers:
       - source: /*
