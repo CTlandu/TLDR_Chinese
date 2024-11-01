@@ -105,10 +105,14 @@ export default {
     async fetchData() {
       this.loading = true;
       try {
-        console.log("Fetching data for date:", this.$route.params.date);
-        const date =
-          this.$route.params.date || new Date().toISOString().split("T")[0];
-        // 硬编码 API URL 用于测试
+        let date = this.$route.params.date;
+
+        // 只有在根路径时才重定向到今天的日期
+        if (!date) {
+          date = new Date().toISOString().split("T")[0];
+          this.$router.replace(`/newsletter/${date}`);
+        }
+
         const API_URL =
           window.location.hostname === "localhost"
             ? "http://localhost:5000"
@@ -116,16 +120,11 @@ export default {
 
         console.log("Using API URL:", API_URL);
         const response = await axios.get(`${API_URL}/api/newsletter/${date}`);
-        console.log("API Response:", response.data);
         this.articles = response.data.articles;
         this.dates = response.data.dates;
+        this.currentDate = date;
       } catch (error) {
-        console.error("Error details:", {
-          message: error.message,
-          status: error.response?.status,
-          data: error.response?.data,
-          config: error.config,
-        });
+        console.error("Error details:", error);
         this.articles = [];
         this.error = "获取数据失败，请稍后重试";
       } finally {

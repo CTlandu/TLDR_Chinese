@@ -8,11 +8,8 @@ const routes = [
     component: NewsletterView,
   },
   {
-    path: "/",
-    redirect: () => {
-      const today = new Date().toISOString().split("T")[0];
-      return `/newsletter/${today}`;
-    },
+    path: "/:pathMatch(.*)*",
+    redirect: "/newsletter",
   },
 ];
 
