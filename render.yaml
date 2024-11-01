@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: tldr-chinese-api
+    name: tldr-chinese-backend
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn run:app --bind=0.0.0.0:10000 --workers=4 --threads=4 --timeout=120
@@ -20,6 +20,12 @@ services:
     staticPublishPath: ./dist
     spa: true
     routes:
+      - type: rewrite
+        source: /newsletter
+        destination: /index.html
+      - type: rewrite
+        source: /newsletter/*
+        destination: /index.html
       - type: rewrite
         source: /*
         destination: /index.html
