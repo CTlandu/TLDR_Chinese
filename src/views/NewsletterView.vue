@@ -107,8 +107,8 @@ export default {
       try {
         let date = this.$route.params.date;
 
-        // 只有在根路径时才重定向到今天的日期
-        if (!date) {
+        // 只有在完全没有路由参数时（即访问 /newsletter 时）才使用今天的日期
+        if (this.$route.path === "/newsletter") {
           date = new Date().toISOString().split("T")[0];
           this.$router.replace(`/newsletter/${date}`);
         }
