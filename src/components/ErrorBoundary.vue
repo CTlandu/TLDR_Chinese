@@ -8,7 +8,8 @@
 
 <script>
 export default {
-  name: "ErrorBoundary",
+  name: 'ErrorBoundary',
+  emits: ['retry'],
   data() {
     return {
       error: null,
@@ -17,12 +18,12 @@ export default {
   methods: {
     retry() {
       this.error = null;
-      this.$emit("retry");
+      this.$emit('retry');
     },
   },
   errorCaptured(err) {
     this.error = err.message;
-    console.error("Error captured:", err);
+    console.error('Error captured:', err);
     return false;
   },
 };
