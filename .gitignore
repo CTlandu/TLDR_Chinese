@@ -27,6 +27,8 @@ ENV/
 .env
 .env.development
 .env.production
+node_modules/
+package-lock.json
 
 # IDE
 .idea/
