@@ -25,19 +25,24 @@ def get_available_dates(days=7):
 @bp.route('/api/newsletter/<date>')
 def get_newsletter_by_date(date):
     articles = get_newsletter(date)
-    dates = get_available_dates()
-    
-    # 处理文章内容
+    if not articles:
+        # 如果没有找到对应日期的新闻，获取最近的一天
+        available_dates = get_available_dates()
+        for available_date in available_dates:
+            articles = get_newsletter(available_date)
+            if articles:
+                date = available_date
+                break
+
     processed_articles = []
     for section in articles:
-        # 创建新的 section 对象，避免修改原始数据
         processed_section = {
             'section': get_section_emoji(section['section']),
             'articles': []
         }
         
         for article in section['articles']:
-            processed_article = article.copy()  # 创建文章的副本
+            processed_article = article.copy()
             processed_article['title'] = get_title_emoji(article['title'])
             processed_section['articles'].append(processed_article)
             
@@ -46,7 +51,7 @@ def get_newsletter_by_date(date):
     response = {
         'articles': processed_articles,
         'currentDate': date,
-        'dates': dates
+        'dates': get_available_dates()
     }
     
     return jsonify(response)
