@@ -115,6 +115,9 @@ def fetch_tldr_content(date=None):
             logging.info(f"Returning {len(articles)} articles")
             return articles
             
+        else:
+            logging.warning(f"Failed to fetch content for date: {date}")
+            return []
     except Exception as e:
         logging.error(f"Error fetching content: {str(e)}")
         return []

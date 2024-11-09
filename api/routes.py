@@ -1,11 +1,10 @@
-from flask import Blueprint, render_template, jsonify
-from .services.newsletter import get_newsletter
+from flask import Blueprint, jsonify
+from .services.newsletter import get_newsletter, fetch_tldr_content
 from datetime import datetime
 import pytz
 from datetime import timedelta
-from flask_cors import CORS
 from .services.emoji_mapper import get_section_emoji, clean_reading_time, get_title_emoji
-
+from .models.article import DailyNewsletter
 
 bp = Blueprint('main', __name__)
 
@@ -20,19 +19,25 @@ def get_available_dates(days=7):
     
     return dates
 
-@bp.route('/')
-
 @bp.route('/api/newsletter/<date>')
 def get_newsletter_by_date(date):
     articles = get_newsletter(date)
     if not articles:
-        # 如果没有找到对应日期的新闻，获取最近的一天
-        available_dates = get_available_dates()
-        for available_date in available_dates:
-            articles = get_newsletter(available_date)
-            if articles:
-                date = available_date
-                break
+        # 尝试从源获取数据
+        articles = fetch_tldr_content(date)
+        if articles:
+            # 如果成功获取数据，更新数据库
+            date_obj = datetime.strptime(date, '%Y-%m-%d')
+            newsletter = DailyNewsletter(date=date_obj, sections=articles)
+            newsletter.save()
+        else:
+            # 如果没有数据，获取数据库中最新一天的新闻
+            available_dates = get_available_dates()
+            for available_date in available_dates:
+                articles = get_newsletter(available_date)
+                if articles:
+                    date = available_date
+                    break
 
     processed_articles = []
     for section in articles:
