@@ -110,8 +110,19 @@ export default {
       }
     },
   },
+  watch: {
+    $route: {
+      handler(to, from) {
+        const newDate = to.params.date;
+        if (newDate) {
+          this.fetchData(newDate);
+        }
+      },
+      immediate: true,
+    },
+  },
   mounted() {
-    this.fetchData();
+    this.fetchData(this.$route.params.date);
   },
 };
 </script>
