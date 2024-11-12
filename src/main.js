@@ -6,19 +6,27 @@ import './style.css';
 
 const messages = {
   en: {
-    welcome: 'Keep up with Tech in 5 minutes',
-    description:
-      'Stay updated with the latest tech news in both English and Chinese.',
+    number: '5',
+    welcomePrefix: 'Minutes to Catch up With',
+    welcomeSuffix: 'Tech',
+    free: 'FREE',
+    descriptionPrefix: 'daily email subscription to stay updated.',
+    descriptionSuffix:
+      'Get the most interesting stories in startups, tech, and programming!',
     subscribe: 'Subscribe Now',
-    latestNews: 'Latest Tech News',
-    readMore: 'Read More',
+    emailPlaceholder: 'Enter your email address',
+    joinCommunity: 'Join 1,250,000+ readers for one daily email',
   },
   zh: {
-    welcome: '每日只需5分钟，掌握全球科技动脉',
-    description: '获取最新的中英文科技新闻。',
+    number: '5',
+    welcomePrefix: '分钟掌握',
+    welcomeSuffix: '全球科技脉搏',
+    free: '免费',
+    descriptionPrefix: '订阅每日邮件，获取最新科技资讯。',
+    descriptionSuffix: '获取创业、科技和编程领域最有趣的新闻摘要！',
     subscribe: '立即订阅',
-    latestNews: '最新科技新闻',
-    readMore: '阅读更多',
+    emailPlaceholder: '请输入您的邮箱地址',
+    joinCommunity: '加入超过1,250,000读者的每日推送邮件',
   },
 };
 

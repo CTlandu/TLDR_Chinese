@@ -3,21 +3,45 @@
     <!-- Navbar -->
     <Navbar />
     <!-- Hero Section -->
-    <section class="hero bg-primary text-white py-20">
-      <div class="container mx-auto text-center">
-        <h1 class="text-5xl font-bold mb-4">{{ $t('welcome') }}</h1>
-        <p class="text-xl mb-8">{{ $t('description') }}</p>
-        <input
-          type="email"
-          placeholder="Email Address"
-          class="px-4 py-2 rounded-lg text-gray-800"
-        />
-        <button
-          class="bg-purple-600 text-white px-6 py-2 rounded-lg ml-2 hover:bg-purple-700"
+    <section class="bg-base-300 text-base-content py-24">
+      <div class="container mx-auto text-center px-4">
+        <h1 class="text-5xl font-bold mb-6">
+          <span class="text-6xl text-primary animate-pulse">{{
+            $t('number')
+          }}</span>
+          {{ $t('welcomePrefix') }}
+          <span class="whitespace-nowrap">
+            {{ $t('welcomeSuffix') }}
+            <span class="text-4xl">💓</span>
+            <span class="text-4xl">💻</span>
+          </span>
+        </h1>
+
+        <p class="text-xl mb-12 max-w-2xl mx-auto">
+          <span class="text-primary font-bold">{{ $t('free') }}</span>
+          {{ $t('descriptionPrefix') }}
+          <br />
+          {{ $t('descriptionSuffix') }}
+        </p>
+
+        <div
+          class="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-2xl mx-auto"
         >
-          {{ $t('subscribe') }}
-        </button>
-        <p class="mt-4 text-sm">Join 1,250,000 readers for one daily email</p>
+          <input
+            type="email"
+            :placeholder="$t('emailPlaceholder')"
+            class="input input-bordered input-lg w-full max-w-lg text-lg border-primary shadow-lg hover:shadow-primary/50 transition-all duration-300 animate-bounce-slow focus:animate-none"
+          />
+          <button
+            class="btn btn-primary btn-lg text-lg min-w-[200px] hover:scale-105 transition-transform"
+          >
+            {{ $t('subscribe') }}
+          </button>
+        </div>
+
+        <p class="mt-8 text-lg opacity-75">
+          {{ $t('joinCommunity') }}
+        </p>
       </div>
     </section>
 
@@ -45,9 +69,23 @@ export default {
 </script>
 
 <style>
-.hero {
-  background-image: url('https://via.placeholder.com/1500x500?text=Tech+Image');
-  background-size: cover;
-  background-position: center;
+@keyframes bounce-slow {
+  0%,
+  100% {
+    transform: translateY(-1%);
+  }
+  50% {
+    transform: translateY(1%);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s infinite;
+}
+
+.input:focus {
+  outline: none;
+  border-color: theme('colors.primary');
+  box-shadow: 0 0 0 2px theme('colors.primary' / 20%);
 }
 </style>
