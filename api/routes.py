@@ -5,6 +5,7 @@ import pytz
 from datetime import timedelta
 from .services.emoji_mapper import get_section_emoji, clean_reading_time, get_title_emoji
 from .models.article import DailyNewsletter
+import logging
 
 bp = Blueprint('main', __name__)
 
@@ -91,3 +92,43 @@ def get_wechat_newsletter(date):
     }
     
     return jsonify(response)
+
+@bp.route('/api/latest-articles')
+def get_latest_articles():
+    try:
+        # 直接从数据库获取最新的一条记录
+        latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
+        logging.info(f"Querying latest newsletter from database")
+        
+        if not latest_newsletter:
+            logging.warning("No newsletters found in database")
+            return jsonify([])
+        
+        latest_date = latest_newsletter.date.strftime('%Y-%m-%d')
+        logging.info(f"Found latest newsletter from: {latest_date}")
+        
+        # 直接使用数据库中的文章数据
+        flattened_articles = []
+        for section in latest_newsletter.sections:
+            processed_section = get_section_emoji(section['section'])
+            logging.info(f"Processing section: {section['section']}")
+            
+            for article in section['articles']:
+                processed_article = {
+                    'title': get_title_emoji(clean_reading_time(article['title'])),
+                    'title_en': clean_reading_time(article['title_en']),
+                    'content': article['content'],
+                    'content_en': article['content_en'],
+                    'url': article['url'],
+                    'image_url': article.get('image_url'),
+                    'section': processed_section,
+                    'date': latest_date
+                }
+                flattened_articles.append(processed_article)
+        
+        logging.info(f"Returning {len(flattened_articles)} articles")
+        return jsonify(flattened_articles)
+        
+    except Exception as e:
+        logging.error(f"Error in get_latest_articles: {str(e)}")
+        return jsonify({'error': str(e)}), 500

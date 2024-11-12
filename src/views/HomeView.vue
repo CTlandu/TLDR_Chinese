@@ -20,16 +20,21 @@
         <p class="mt-4 text-sm">Join 1,250,000 readers for one daily email</p>
       </div>
     </section>
+
+    <!-- Latest Articles Section -->
+    <LatestArticles />
   </div>
 </template>
 
 <script>
 import Navbar from '../components/Navbar.vue';
+import LatestArticles from '../components/LatestArticles.vue';
 
 export default {
   name: 'HomeView',
   components: {
     Navbar,
+    LatestArticles,
   },
   methods: {
     changeLanguage(lang) {

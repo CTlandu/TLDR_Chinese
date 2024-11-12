@@ -6,15 +6,19 @@ import './style.css';
 
 const messages = {
   en: {
-    welcome: 'Welcome to TLDR Daily Tech News',
+    welcome: 'Keep up with Tech in 5 minutes',
     description:
       'Stay updated with the latest tech news in both English and Chinese.',
     subscribe: 'Subscribe Now',
+    latestNews: 'Latest Tech News',
+    readMore: 'Read More',
   },
   zh: {
-    welcome: '欢迎来到 TLDR 每日科技新闻',
+    welcome: '每日只需5分钟，掌握全球科技动脉',
     description: '获取最新的中英文科技新闻。',
     subscribe: '立即订阅',
+    latestNews: '最新科技新闻',
+    readMore: '阅读更多',
   },
 };
 

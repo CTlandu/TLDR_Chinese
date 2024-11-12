@@ -1,4 +1,7 @@
 /** @type {import('tailwindcss').Config} */
+import daisyui from 'daisyui';
+import daisyuiThemes from 'daisyui/src/theming/themes';
+
 export default {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
   theme: {
@@ -8,12 +11,12 @@ export default {
       },
     },
   },
-  plugins: [require('daisyui')],
+  plugins: [daisyui],
   daisyui: {
     themes: [
       {
         dark: {
-          ...require('daisyui/src/theming/themes')['dark'],
+          ...daisyuiThemes['dark'],
           primary: '#0066cc',
           'primary-focus': '#0052a3',
         },
