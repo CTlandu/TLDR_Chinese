@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
-const daisyui = require('daisyui');
-const daisyuiThemes = require('daisyui/src/theming/themes');
+import daisyui from 'daisyui';
+import themes from 'daisyui/src/theming/themes.js';
 
-module.exports = {
+export default {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -16,7 +16,7 @@ module.exports = {
     themes: [
       {
         dark: {
-          ...daisyuiThemes['dark'],
+          ...themes['dark'],
           primary: '#0066cc',
           'primary-focus': '#0052a3',
         },
