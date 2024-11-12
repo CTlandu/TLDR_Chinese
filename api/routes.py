@@ -21,6 +21,7 @@ def get_available_dates(days=7):
 
 @bp.route('/api/newsletter/<date>')
 def get_newsletter_by_date(date):
+    
     articles = get_newsletter(date)
     if not articles:
         # 尝试从源获取数据
