@@ -1,11 +1,16 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
   plugins: [vue()],
-  base: "/",
+  base: '/',
   build: {
-    outDir: "dist",
-    assetsDir: "assets",
+    outDir: 'dist',
+    assetsDir: 'assets',
+    cssCodeSplit: true,
+    sourcemap: true,
+  },
+  optimizeDeps: {
+    include: ['tailwindcss', 'daisyui'],
   },
 });
