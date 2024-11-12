@@ -21,3 +21,12 @@ class DailyNewsletter(db.Document):
             'sections': self.sections,
             'created_at': self.created_at.isoformat()
         }
+
+class Article(db.EmbeddedDocument):
+    title = db.StringField(required=True)
+    title_en = db.StringField(required=True)
+    content = db.StringField(required=True)
+    content_en = db.StringField(required=True)
+    url = db.StringField(required=True)
+    image_url = db.StringField()
+    section = db.StringField(required=True)

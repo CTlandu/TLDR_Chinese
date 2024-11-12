@@ -5,6 +5,7 @@ from datetime import datetime
 from functools import lru_cache
 import time
 from ..services.translator import TranslatorService
+from ..services.image_extractor import extract_article_image
 from flask import current_app
 from ..models.article import DailyNewsletter
 import logging
@@ -94,15 +95,22 @@ def fetch_tldr_content(date=None):
                     link = article.find('a', class_='font-bold')
                     url = link['href'] if link else ""
                     
+                    # 提取文章图片
+                    image_url = None
+                    if url:
+                        image_url = extract_article_image(url)
+                        logging.info(f"Extracted image URL for article: {image_url}")
+                    
                     logging.info(f"Processed article: {title}")
                     
-                    # 构建双语内容
+                    # 构建双语内容，添加图片URL
                     article_content = {
                         'title': title_zh,
                         'title_en': title,
                         'content': content_html_zh,
                         'content_en': content_html,
-                        'url': url
+                        'url': url,
+                        'image_url': image_url
                     }
                     section_content.append(article_content)
                 
