@@ -14,14 +14,14 @@
 
 A Chinese translation of TLDR Tech daily newsletter, helping Chinese readers stay updated with global tech news.
 
-<div align="center" style="display: flex; justify-content: center; gap: 20px;">
-  <div>
-    <img src="assets/tldrchinese_main.png" alt="TLDR Chinese Landing Page" width="400">
+<div align="center" style="display: flex; justify-content: center; gap: 20px; flex-wrap: nowrap; overflow-x: auto; padding: 20px;">
+  <div style="flex: 0 0 auto;">
+    <img src="assets/tldrchinese_main.png" alt="TLDR Chinese Landing Page" width="400" style="max-width: 100%; height: auto;">
     <p><em>TLDR Chinese Newsletter</em></p>
   </div>
 
-  <div>
-    <img src="assets/tldr_main.png" alt="TLDR Tech News Landing Page" width="400">
+  <div style="flex: 0 0 auto;">
+    <img src="assets/tldr_main.png" alt="TLDR Tech News Landing Page" width="400" style="max-width: 100%; height: auto;">
     <p><em>TLDR Tech News (Original Source)</em></p>
   </div>
 </div>
@@ -30,14 +30,14 @@ Source: [TLDR.tech](https://tldr.tech)
 
 Translation powered by [DeepL API](https://www.deepl.com/)
 
-<div align="center" style="display: flex; justify-content: center; gap: 20px;">
-  <div>
-    <img src="assets/tldrchinese_newsletter.png" alt="TLDR Chinese Newsletter example" width="200">
+<div align="center" style="display: flex; justify-content: center; gap: 20px; flex-wrap: nowrap; overflow-x: auto; padding: 20px;">
+  <div style="flex: 0 0 auto;">
+    <img src="assets/tldrchinese_newsletter.png" alt="TLDR Chinese Newsletter example" width="200" style="max-width: 100%; height: auto;">
     <p><em>Daily Newsletter example</em></p>
   </div>
 
-  <div>
-    <img src="assets/tldr_newsletter.png" alt="TLDR Tech Newsletter example" width="200">
+  <div style="flex: 0 0 auto;">
+    <img src="assets/tldr_newsletter.png" alt="TLDR Tech Newsletter example" width="200" style="max-width: 100%; height: auto;">
     <p><em>Daily Newsletter example (Original Source)</em></p>
   </div>
 </div>
