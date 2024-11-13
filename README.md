@@ -70,6 +70,11 @@ Translation powered by [DeepL API](https://www.deepl.com/)
 - 需要快速了解行业动态的IT从业者 / IT professionals who need quick industry updates
 - 对科技创新感兴趣的学生 / Students interested in tech innovation
 
+## 🎯 项目趣事 Project Fun Facts
+
+- 🚀 本项目由 Cursor AI 辅助，在24小时内完成主要开发 / Main development completed within 24 hours with Cursor AI assistance
+- 📹 开发日志视频 Development Vlog：[24小时挑战：用AI助手开发一个翻译机器人 / 24h Challenge: Building a Translation Bot with AI Assistant](https://www.bilibili.com/video/BV1QQDcY9EnS/)
+
 ## 🛠️ 技术栈 Tech Stack
 
 ### 前端 Frontend
