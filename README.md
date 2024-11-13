@@ -1,5 +1,91 @@
-# Vue 3 + Vite
+# TLDR Tech Newsletter (Chinese) TLDR科技新闻（中文版）
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## 🌈 在线体验 Live Demo
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+- 📱 Web网页版 Website：https://www.tldrnewsletter.cn
+- 📱 微信公众号 WeChat Public Account：[TLDR北美科技日推](https://mp.weixin.qq.com/s/8k55rjuc4GCsYlrD_i5n3A)
+
+<div align="center">
+  <img src="assets/tldr_qrcode.jpg" alt="TLDR Chinese WeChat QR Code" width="100" style="margin-right: 10px;">
+  <img src="assets/tldr_wechat_card.png" alt="TLDR Chinese WeChat 公众号" width="200">
+</div>
+
+🌏 将TLDR Tech Newsletter的每日科技新闻翻译成中文,让中文读者快速了解全球科技动态。
+
+A Chinese translation of TLDR Tech daily newsletter, helping Chinese readers stay updated with global tech news.
+
+<div align="center" style="display: flex; justify-content: center; gap: 20px;">
+  <div>
+    <img src="assets/tldrchinese_main.png" alt="TLDR Chinese Landing Page" width="400">
+    <p><em>TLDR Chinese Newsletter</em></p>
+  </div>
+
+  <div>
+    <img src="assets/tldr_main.png" alt="TLDR Tech News Landing Page" width="400">
+    <p><em>TLDR Tech News (Original Source)</em></p>
+  </div>
+</div>
+
+Source: [TLDR.tech](https://tldr.tech)
+
+Translation powered by [DeepL API](https://www.deepl.com/)
+
+<div align="center" style="display: flex; justify-content: center; gap: 20px;">
+  <div>
+    <img src="assets/tldrchinese_newsletter.png" alt="TLDR Chinese Newsletter example" width="200">
+    <p><em>Daily Newsletter example</em></p>
+  </div>
+
+  <div>
+    <img src="assets/tldr_newsletter.png" alt="TLDR Tech Newsletter example" width="200">
+    <p><em>Daily Newsletter example (Original Source)</em></p>
+  </div>
+</div>
+
+## ✨ 特色功能 Features
+
+- 📰 每日自动生成微信公众号文章并定时发布 / Automatically generate and publish WeChat articles daily
+  <div align="center">
+    <img src="assets/Make_workflow.png" alt="Make Workflow" width="400">
+
+  _Automated Workflow to publish WeChat articles using [Make](https://www.make.com/)_
+  </div>
+
+- 🤖 自动翻译英文科技新闻 / Auto-translate English tech news
+- 🌐 双语对照阅读 / Bilingual reading
+- 📱 移动端适配 / Mobile responsive
+- 🖼️ 智能提取文章配图 / Smart article image extraction
+- 🔍 按日期浏览历史新闻 / Browse historical news by date
+
+## 🎯 目标用户群 Target Audience
+
+- 关注全球科技动态的中文读者 / Chinese readers interested in global tech news
+- 想提升英文阅读能力的科技爱好者 / Tech enthusiasts who want to improve English reading
+- 需要快速了解行业动态的IT从业者 / IT professionals who need quick industry updates
+- 对科技创新感兴趣的学生 / Students interested in tech innovation
+
+## 🛠️ 技术栈 Tech Stack
+
+### 前端 Frontend
+
+![Vue.js](https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=4FC08D)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+
+- DaisyUI 组件库 / DaisyUI Component Library
+
+### 后端 Backend
+
+![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
+
+- DeepL API 翻译服务 / Translation Service
+- BeautifulSoup4 网页解析 / Web Scraping
+
+## 📝 开源协议 License
+
+MIT License © 2024 TLDR Chinese Newsletter
+
+## 🤝 贡献指南 Contributing
+
+欢迎提交 Issue 和 Pull Request! / Welcome to contribute!
