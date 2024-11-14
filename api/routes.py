@@ -6,8 +6,21 @@ from datetime import timedelta
 from .services.emoji_mapper import get_section_emoji, clean_reading_time, get_title_emoji
 from .models.article import DailyNewsletter
 import logging
+from flask import make_response
+
+
 
 bp = Blueprint('main', __name__)
+
+
+# 添加在文件开头的导入语句之后，但在所有路由之前
+@bp.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', 'https://www.tldrnewsletter.cn')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
 
 def get_available_dates(days=7):
     et = pytz.timezone('US/Eastern')
