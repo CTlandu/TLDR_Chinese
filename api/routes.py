@@ -108,14 +108,16 @@ def get_wechat_newsletter(date):
                     # 文章容器
                     '<div style="margin-bottom: 25px;">',
                     
-                    # 标题
+                    # 标题（中英双语）
                     f'<div style="font-size: 17px; font-weight: bold; margin-bottom: 10px; color: #333;">{title}</div>',
+                    f'<div style="font-size: 15px; color: #666; margin-bottom: 10px;">{article["title_en"]}</div>',
                     
                     # 图片（如果有）
                     f'<img src="{image_url}" style="width: 100%; margin: 10px 0; border-radius: 4px;" />' if image_url else '',
                     
-                    # 内容
+                    # 内容（中英双语）
                     f'<div style="font-size: 15px; line-height: 1.6; color: #333; margin: 10px 0;">{content}</div>',
+                    f'<div style="font-size: 14px; line-height: 1.6; color: #666; margin: 10px 0;">{article["content_en"]}</div>',
                     
                     # 原文链接
                     f'<div style="font-size: 14px; color: #666; margin-top: 8px;">',
@@ -131,7 +133,9 @@ def get_wechat_newsletter(date):
             'html': '\n'.join(html_content),
             'articles': [{
                 'title': get_title_emoji(clean_reading_time(article['title'])),
+                'title_en': article['title_en'],
                 'content': article['content'],
+                'content_en': article['content_en'],
                 'url': article['url'],
                 'image_url': article.get('image_url', ''),
                 'section': get_section_emoji(section['section'])
