@@ -78,88 +78,72 @@ def get_newsletter_by_date(date):
 
 @bp.route('/api/wechat/newsletter/<date>')
 def get_wechat_newsletter(date):
-    articles = get_newsletter(date)
-    
-    # 生成微信文章的 HTML 样式
-    css_style = """
-    <style>
-        .article-container { margin-bottom: 30px; }
-        .article-title { 
-            font-size: 18px; 
-            font-weight: bold; 
-            margin-bottom: 10px;
-            color: #333;
-        }
-        .article-content { 
-            font-size: 15px; 
-            line-height: 1.6;
-            color: #666;
-            margin-bottom: 15px;
-        }
-        .article-image {
-            width: 100%;
-            max-width: 100%;
-            height: auto;
-            margin: 10px 0;
-            border-radius: 8px;
-        }
-        .section-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin: 25px 0 15px 0;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
-            color: #222;
-        }
-        .article-meta {
-            font-size: 13px;
-            color: #888;
-            margin-bottom: 8px;
-        }
-    </style>
-    """
-    
-    # 处理文章内容
-    html_content = [css_style]
-    # html_content.append(f'<h1 style="text-align: center; font-size: 24px; margin: 20px 0;">TLDR每日科技新闻 【{date}】</h1>')
-    
-    for section in articles:
-        processed_section = get_section_emoji(section['section'])
-        html_content.append(f'<div class="section-title">{processed_section}</div>')
+    try:
+        articles = get_newsletter(date)
+        if not articles:
+            return jsonify({'error': 'No articles found'}), 404
         
-        for article in section['articles']:
-            # 清理和处理文章内容
-            title = clean_reading_time(article['title'])
-            title = get_title_emoji(title)
-            content = article['content']
-            url = article.get('url', '')
-            image_url = article.get('image_url', '')
+        html_content = []
+        html_content.append(f'<div style="margin-bottom: 20px; text-align: center; font-size: 20px; font-weight: bold;">TLDR每日科技新闻 【{date}】</div>')
+        
+        for section in articles:
+            processed_section = get_section_emoji(section['section'])
+            # 添加分区标题
+            html_content.append(
+                f'<div style="margin: 20px 0; padding: 10px 0; font-size: 18px; font-weight: bold; border-bottom: 1px solid #e5e5e5;">'
+                f'{processed_section}'
+                f'</div>'
+            )
             
-            article_html = f"""
-            <div class="article-container">
-                <div class="article-title">{title}</div>
-                {f'<img class="article-image" src="{image_url}" alt="{title}"/>' if image_url else ''}
-                <div class="article-content">{content}</div>
-                <div class="article-meta">
-                    原文链接：<a href="{url}" style="color: #0066cc;">{url}</a>
-                </div>
-            </div>
-            """
-            html_content.append(article_html)
-    
-    response = {
-        'html': '\n'.join(html_content),
-        'articles': [{
-            'title': get_title_emoji(clean_reading_time(article['title'])),
-            'content': article['content'],
-            'url': article['url'],
-            'image_url': article.get('image_url', ''),
-            'section': get_section_emoji(section['section'])
-        } for section in articles for article in section['articles']],
-        'currentDate': date
-    }
-    
-    return jsonify(response)
+            for article in section['articles']:
+                # 清理和处理文章内容
+                title = clean_reading_time(article['title'])
+                title = get_title_emoji(title)
+                content = article['content']
+                url = article.get('url', '')
+                image_url = article.get('image_url', '')
+                
+                # 构建文章 HTML
+                article_html = [
+                    # 文章容器
+                    '<div style="margin-bottom: 25px;">',
+                    
+                    # 标题
+                    f'<div style="font-size: 17px; font-weight: bold; margin-bottom: 10px; color: #333;">{title}</div>',
+                    
+                    # 图片（如果有）
+                    f'<img src="{image_url}" style="width: 100%; margin: 10px 0; border-radius: 4px;" />' if image_url else '',
+                    
+                    # 内容
+                    f'<div style="font-size: 15px; line-height: 1.6; color: #333; margin: 10px 0;">{content}</div>',
+                    
+                    # 原文链接
+                    f'<div style="font-size: 14px; color: #666; margin-top: 8px;">',
+                    f'原文链接：<a href="{url}" style="color: #576b95; text-decoration: none;">{url}</a>',
+                    '</div>',
+                    
+                    '</div>'  # 结束文章容器
+                ]
+                
+                html_content.append(''.join(article_html))
+        
+        response = {
+            'html': '\n'.join(html_content),
+            'articles': [{
+                'title': get_title_emoji(clean_reading_time(article['title'])),
+                'content': article['content'],
+                'url': article['url'],
+                'image_url': article.get('image_url', ''),
+                'section': get_section_emoji(section['section'])
+            } for section in articles for article in section['articles']],
+            'currentDate': date
+        }
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logging.error(f"Error in get_wechat_newsletter: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/latest-articles')
 def get_latest_articles():
