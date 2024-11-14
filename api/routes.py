@@ -80,27 +80,82 @@ def get_newsletter_by_date(date):
 def get_wechat_newsletter(date):
     articles = get_newsletter(date)
     
-    # 处理文章内容
-    processed_articles = []
-    for section in articles:
-        processed_section = {
-            'section': get_section_emoji(section['section']),
-            'articles': []
+    # 生成微信文章的 HTML 样式
+    css_style = """
+    <style>
+        .article-container { margin-bottom: 30px; }
+        .article-title { 
+            font-size: 18px; 
+            font-weight: bold; 
+            margin-bottom: 10px;
+            color: #333;
         }
+        .article-content { 
+            font-size: 15px; 
+            line-height: 1.6;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .article-image {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 25px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            color: #222;
+        }
+        .article-meta {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+    </style>
+    """
+    
+    # 处理文章内容
+    html_content = [css_style]
+    # html_content.append(f'<h1 style="text-align: center; font-size: 24px; margin: 20px 0;">TLDR每日科技新闻 【{date}】</h1>')
+    
+    for section in articles:
+        processed_section = get_section_emoji(section['section'])
+        html_content.append(f'<div class="section-title">{processed_section}</div>')
         
         for article in section['articles']:
-            processed_article = article.copy()
-            # 清理标题中的阅读时间
-            processed_article['title'] = clean_reading_time(article['title'])
-            processed_article['title_en'] = clean_reading_time(article['title_en'])
-            # 添加标题 emoji
-            processed_article['title'] = get_title_emoji(processed_article['title'])
-            processed_section['articles'].append(processed_article)
+            # 清理和处理文章内容
+            title = clean_reading_time(article['title'])
+            title = get_title_emoji(title)
+            content = article['content']
+            url = article.get('url', '')
+            image_url = article.get('image_url', '')
             
-        processed_articles.append(processed_section)
+            article_html = f"""
+            <div class="article-container">
+                <div class="article-title">{title}</div>
+                {f'<img class="article-image" src="{image_url}" alt="{title}"/>' if image_url else ''}
+                <div class="article-content">{content}</div>
+                <div class="article-meta">
+                    原文链接：<a href="{url}" style="color: #0066cc;">{url}</a>
+                </div>
+            </div>
+            """
+            html_content.append(article_html)
     
     response = {
-        'articles': processed_articles,
+        'html': '\n'.join(html_content),
+        'articles': [{
+            'title': get_title_emoji(clean_reading_time(article['title'])),
+            'content': article['content'],
+            'url': article['url'],
+            'image_url': article.get('image_url', ''),
+            'section': get_section_emoji(section['section'])
+        } for section in articles for article in section['articles']],
         'currentDate': date
     }
     
