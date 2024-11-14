@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from .services.newsletter import get_newsletter, fetch_tldr_content
 from datetime import datetime
 import pytz
@@ -16,10 +16,19 @@ bp = Blueprint('main', __name__)
 # 添加在文件开头的导入语句之后，但在所有路由之前
 @bp.after_request
 def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', 'https://www.tldrnewsletter.cn')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    origin = request.headers.get('Origin')
+    allowed_origins = [
+        'https://www.tldrnewsletter.cn',
+        'https://tldrnewsletter.cn',
+        'http://www.tldrnewsletter.cn',
+        'http://tldrnewsletter.cn'
+    ]
+    
+    if origin in allowed_origins:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
     return response
 
 def get_available_dates(days=7):
