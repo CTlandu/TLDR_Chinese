@@ -105,7 +105,7 @@ export default {
         const response = await axios.get(
           `${API_URL}/api/newsletter/${dateParam}`,
           {
-            withCredentials: true,
+            withCredentials: false,
             headers: {
               'Content-Type': 'application/json',
               Accept: 'application/json',

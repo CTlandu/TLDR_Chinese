@@ -16,19 +16,10 @@ bp = Blueprint('main', __name__)
 # 添加在文件开头的导入语句之后，但在所有路由之前
 @bp.after_request
 def after_request(response):
-    origin = request.headers.get('Origin')
-    allowed_origins = [
-        'https://www.tldrnewsletter.cn',
-        'https://tldrnewsletter.cn',
-        'http://www.tldrnewsletter.cn',
-        'http://tldrnewsletter.cn'
-    ]
-    
-    if origin in allowed_origins:
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Allow-Origin', 'https://www.tldrnewsletter.cn')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'false')
     return response
 
 def get_available_dates(days=7):
@@ -44,46 +35,44 @@ def get_available_dates(days=7):
 
 @bp.route('/api/newsletter/<date>')
 def get_newsletter_by_date(date):
-    
-    articles = get_newsletter(date)
-    if not articles:
-        # 尝试从源获取数据
-        articles = fetch_tldr_content(date)
-        if articles:
-            # 如果成功获取数据，更新数据库
-            date_obj = datetime.strptime(date, '%Y-%m-%d')
-            newsletter = DailyNewsletter(date=date_obj, sections=articles)
-            newsletter.save()
-        else:
-            # 如果没有数据，获取数据库中最新一天的新闻
-            available_dates = get_available_dates()
-            for available_date in available_dates:
-                articles = get_newsletter(available_date)
-                if articles:
-                    date = available_date
-                    break
-
-    processed_articles = []
-    for section in articles:
-        processed_section = {
-            'section': get_section_emoji(section['section']),
-            'articles': []
-        }
-        
-        for article in section['articles']:
-            processed_article = article.copy()
-            processed_article['title'] = get_title_emoji(article['title'])
-            processed_section['articles'].append(processed_article)
+    try:
+        articles = get_newsletter(date)
+        if not articles:
+            return jsonify({
+                'error': 'No content available for this date',
+                'articles': [],
+                'currentDate': date,
+                'dates': get_available_dates()
+            }), 404
             
-        processed_articles.append(processed_section)
-    
-    response = {
-        'articles': processed_articles,
-        'currentDate': date,
-        'dates': get_available_dates()
-    }
-    
-    return jsonify(response)
+        processed_articles = []
+        for section in articles:
+            processed_section = {
+                'section': get_section_emoji(section['section']),
+                'articles': []
+            }
+            
+            for article in section['articles']:
+                processed_article = article.copy()
+                processed_article['title'] = get_title_emoji(article['title'])
+                processed_section['articles'].append(processed_article)
+                
+            processed_articles.append(processed_section)
+        
+        return jsonify({
+            'articles': processed_articles,
+            'currentDate': date,
+            'dates': get_available_dates()
+        })
+        
+    except Exception as e:
+        logging.error(f"Error processing request: {str(e)}")
+        return jsonify({
+            'error': 'Internal server error',
+            'articles': [],
+            'currentDate': date,
+            'dates': get_available_dates()
+        }), 500
 
 @bp.route('/api/wechat/newsletter/<date>')
 def get_wechat_newsletter(date):
