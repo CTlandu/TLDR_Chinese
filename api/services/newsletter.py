@@ -13,10 +13,7 @@ import json
 
 @lru_cache(maxsize=128)
 def get_newsletter(date=None):
-    logging.info(f"Attempting to get newsletter for date: {date}")
-    
     try:
-        # 验证日期格式和范围
         if not date:
             et = pytz.timezone('US/Eastern')
             date = datetime.now(et).strftime('%Y-%m-%d')
@@ -25,24 +22,33 @@ def get_newsletter(date=None):
         
         # 检查是否是未来日期
         if date_obj.date() > datetime.now().date():
-            logging.warning(f"Future date requested: {date}")
-            return {'error': 'Cannot fetch future dates'}, 400
+            logging.warning(f"Future date requested: {date}, returning latest available newsletter")
+            latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
+            if latest_newsletter:
+                logging.info(f"Found latest newsletter from: {latest_newsletter.date}")
+                return latest_newsletter.sections
+            return []
             
-        # 首先查找数据库
+        # 首先查找数据库中请求���日期
         newsletter = DailyNewsletter.objects(date=date_obj).first()
         if newsletter:
             logging.info(f"Found newsletter in database for {date}")
-            return json.loads(json.dumps(newsletter.sections, ensure_ascii=False)), 200
+            return newsletter.sections
             
         # 如果数据库中没有，尝试从源站获取
         logging.info(f"Newsletter not found in database, fetching from source")
         articles = fetch_tldr_content(date)
         
         if not articles:
-            logging.warning(f"No content available for date: {date}")
-            return {'error': 'No content available for this date'}, 404
+            logging.warning(f"No content available for date: {date}, trying to get latest available")
+            # 如果获取不到内容，返回数据库中最新的内容
+            latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
+            if latest_newsletter:
+                logging.info(f"Returning latest available newsletter from: {latest_newsletter.date}")
+                return latest_newsletter.sections
+            return []
             
-        # 如果获取成功，保存到数据库
+        # 如果获取到了内容，保存到数据库
         try:
             newsletter = DailyNewsletter(
                 date=date_obj,
@@ -50,19 +56,23 @@ def get_newsletter(date=None):
             )
             newsletter.save()
             logging.info(f"Successfully saved newsletter to database")
-            return json.loads(json.dumps(articles, ensure_ascii=False)), 200
+            return articles
             
         except Exception as e:
             logging.error(f"Database save error: {str(e)}")
-            # 即使保存失败，仍然返回获取到的内容
-            return json.loads(json.dumps(articles, ensure_ascii=False)), 200
+            return articles  # 即使保存失败也返回获取到的内容
             
-    except ValueError as e:
-        logging.error(f"Invalid date format: {str(e)}")
-        return {'error': 'Invalid date format'}, 400
     except Exception as e:
         logging.error(f"Error in get_newsletter: {str(e)}")
-        return {'error': 'Internal server error'}, 500
+        # 发生错误时也尝试返回最新的内容
+        try:
+            latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
+            if latest_newsletter:
+                logging.info(f"Returning latest available newsletter after error")
+                return latest_newsletter.sections
+        except Exception as inner_e:
+            logging.error(f"Error getting latest newsletter: {str(inner_e)}")
+        return []
 
 def fetch_tldr_content(date):
     url = f"https://tldr.tech/tech/{date}"

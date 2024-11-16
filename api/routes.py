@@ -16,10 +16,22 @@ bp = Blueprint('main', __name__)
 # 添加在文件开头的导入语句之后，但在所有路由之前
 @bp.after_request
 def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', 'https://www.tldrnewsletter.cn')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    response.headers.add('Access-Control-Allow-Credentials', 'false')
+    origin = request.headers.get('Origin')
+    allowed_origins = [
+        'https://www.tldrnewsletter.cn',
+        'http://localhost:5173',  # 添加本地开发环境
+        'http://localhost:3000',
+        'https://tldrnewsletter.cn',
+        'https://tldr-chinese-frontend.onrender.com',
+        'https://tldr-chinese-backend.onrender.com',
+        # 如果你使用其他端口也可以添加
+    ]
+    
+    if origin in allowed_origins:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'false')
     return response
 
 def get_available_dates(days=7):
@@ -37,42 +49,53 @@ def get_available_dates(days=7):
 def get_newsletter_by_date(date):
     try:
         articles = get_newsletter(date)
+        
         if not articles:
             return jsonify({
-                'error': 'No content available for this date',
                 'articles': [],
                 'currentDate': date,
                 'dates': get_available_dates()
-            }), 404
+            }), 200
+            
+        # 获取实际返回的文章日期
+        actual_date = date
+        if DailyNewsletter.objects(sections=articles).first():
+            actual_date = DailyNewsletter.objects(sections=articles).first().date.strftime('%Y-%m-%d')
             
         processed_articles = []
         for section in articles:
+            if not isinstance(section, dict) or 'section' not in section:
+                continue
+                
             processed_section = {
                 'section': get_section_emoji(section['section']),
                 'articles': []
             }
             
-            for article in section['articles']:
-                processed_article = article.copy()
-                processed_article['title'] = get_title_emoji(article['title'])
-                processed_section['articles'].append(processed_article)
-                
+            if 'articles' in section and isinstance(section['articles'], list):
+                for article in section['articles']:
+                    if isinstance(article, dict):
+                        processed_article = article.copy()
+                        if 'title' in processed_article:
+                            processed_article['title'] = get_title_emoji(article['title'])
+                        processed_section['articles'].append(processed_article)
+            
             processed_articles.append(processed_section)
         
         return jsonify({
             'articles': processed_articles,
-            'currentDate': date,
+            'currentDate': actual_date,  # 返回实际的日期
             'dates': get_available_dates()
         })
-        
+            
     except Exception as e:
         logging.error(f"Error processing request: {str(e)}")
         return jsonify({
-            'error': 'Internal server error',
+            'error': '暂时无法获取新闻内容，请稍后再试',
             'articles': [],
             'currentDate': date,
             'dates': get_available_dates()
-        }), 500
+        }), 200
 
 @bp.route('/api/wechat/newsletter/<date>')
 def get_wechat_newsletter(date):
