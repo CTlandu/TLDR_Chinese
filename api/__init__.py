@@ -13,17 +13,20 @@ def create_app(config_class=Config):
     # 允许所有来源的 CORS 请求
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173", 
-                        "https://tldr-chinese-frontend.onrender.com",
-                        "https://tldr-chinese-backend.onrender.com",
-                        "https://www.tldrnewsletter.cn",
-                        "https://tldrnewsletter.cn",
-                        "http://www.tldrnewsletter.cn",
-                        "http://tldrnewsletter.cn"],
-            "methods": ["GET", "POST", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
+            "origins": [
+                "http://localhost:5173", 
+                "https://tldr-chinese-frontend.onrender.com",
+                "https://tldr-chinese-backend.onrender.com",
+                "https://www.tldrnewsletter.cn",
+                "https://tldrnewsletter.cn",
+                "http://www.tldrnewsletter.cn",
+                "http://tldrnewsletter.cn"
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
             "expose_headers": ["Content-Range", "X-Content-Range"],
-            "supports_credentials": True
+            "supports_credentials": True,
+            "max_age": 600
         }
     })
     

@@ -103,7 +103,14 @@ export default {
 
         const dateParam = date || this.$route.params.date || 'latest';
         const response = await axios.get(
-          `${API_URL}/api/newsletter/${dateParam}`
+          `${API_URL}/api/newsletter/${dateParam}`,
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+          }
         );
         this.articles = response.data.articles;
         this.currentDate = response.data.currentDate;
