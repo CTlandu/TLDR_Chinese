@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, url_for, current_app
 from .services.newsletter import get_newsletter, fetch_tldr_content
 from datetime import datetime
 import pytz
@@ -7,6 +7,9 @@ from .services.emoji_mapper import get_section_emoji, clean_reading_time, get_ti
 from .models.article import DailyNewsletter
 import logging
 from flask import make_response
+from .services.mailgun_service import MailgunService
+from .models.subscriber import Subscriber
+import secrets
 
 
 
@@ -173,18 +176,45 @@ def get_wechat_newsletter(date):
 @bp.route('/api/latest-articles')
 def get_latest_articles():
     try:
-        # 直接从数据库获取最新的一条记录
-        latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
-        logging.info(f"Querying latest newsletter from database")
+        # 获取当前时间（美东时间）
+        et = pytz.timezone('US/Eastern')
+        current_date = datetime.now(et)
+        logging.info(f"Current ET date: {current_date}")
+
+        # 获取所有可用的newsletter，按日期降序排列
+        all_newsletters = DailyNewsletter.objects().order_by('-date')
+        logging.info(f"Total newsletters in database: {all_newsletters.count()}")
         
+        # 获取最新的newsletter
+        latest_newsletter = all_newsletters.first()
         if not latest_newsletter:
             logging.warning("No newsletters found in database")
             return jsonify([])
         
         latest_date = latest_newsletter.date.strftime('%Y-%m-%d')
-        logging.info(f"Found latest newsletter from: {latest_date}")
+        logging.info(f"Latest newsletter date: {latest_date}")
         
-        # 直接使用数据库中的文章数据
+        # 检查是否有更新的内容
+        today_date = current_date.strftime('%Y-%m-%d')
+        if latest_date != today_date:
+            logging.info(f"Checking for newer content for {today_date}")
+            # 尝试获取今天的内容
+            today_articles = fetch_tldr_content(today_date)
+            if today_articles:
+                logging.info("Found newer content, using it instead")
+                # 如果找到了今天的内容，保存并使用它
+                try:
+                    new_newsletter = DailyNewsletter(
+                        date=current_date,
+                        sections=today_articles
+                    )
+                    new_newsletter.save()
+                    latest_newsletter = new_newsletter
+                    latest_date = today_date
+                except Exception as e:
+                    logging.error(f"Error saving new newsletter: {str(e)}")
+        
+        # 处理文章数据
         flattened_articles = []
         for section in latest_newsletter.sections:
             processed_section = get_section_emoji(section['section'])
@@ -203,9 +233,81 @@ def get_latest_articles():
                 }
                 flattened_articles.append(processed_article)
         
-        logging.info(f"Returning {len(flattened_articles)} articles")
+        logging.info(f"Returning {len(flattened_articles)} articles for date {latest_date}")
         return jsonify(flattened_articles)
         
     except Exception as e:
         logging.error(f"Error in get_latest_articles: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/subscribe', methods=['POST'])
+def subscribe():
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({'error': '请提供邮箱地址'}), 400
+            
+        # 检查邮箱是否已存在
+        existing_subscriber = Subscriber.objects(email=email).first()
+        if existing_subscriber and existing_subscriber.confirmed:
+            return jsonify({'error': '该邮箱已订阅'}), 400
+            
+        # 生成确认令牌
+        confirmation_token = secrets.token_urlsafe(32)
+        
+        # 创建或更新订阅者
+        subscriber = Subscriber.objects(email=email).modify(
+            upsert=True,
+            new=True,
+            set__email=email,
+            set__confirmation_token=confirmation_token
+        )
+        
+        # 生成确认链接
+        confirmation_link = url_for(
+            'confirm_subscription',
+            token=confirmation_token,
+            _external=True
+        )
+        
+        # 发送确认邮件
+        mailgun = MailgunService(
+            current_app.config['MAILGUN_API_KEY'],
+            current_app.config['MAILGUN_DOMAIN']
+        )
+        
+        mailgun.send_confirmation_email(email, confirmation_link)
+        
+        return jsonify({
+            'message': '确认邮件已发送，请查收并点击确认链接完成订阅'
+        })
+        
+    except Exception as e:
+        logging.error(f"Subscription error: {str(e)}")
+        return jsonify({'error': '订阅失败，请稍后重试'}), 500
+
+@bp.route('/api/test-mailgun', methods=['GET'])
+def test_mailgun():
+    try:
+        mailgun = MailgunService(
+            current_app.config['MAILGUN_API_KEY'],
+            current_app.config['MAILGUN_DOMAIN']
+        )
+        
+        # 发送测试邮件到你的邮箱
+        result = mailgun.send_simple_message(
+            "你的邮箱地址",  # 替换成你的邮箱
+            "TLDR Chinese - 测试邮件",
+            "这是一封测试邮件，用于验证 Mailgun 集成是否成功。"
+        )
+        
+        return jsonify({
+            'message': '测试邮件已发送',
+            'result': result
+        })
+        
+    except Exception as e:
+        logging.error(f"Mailgun test failed: {str(e)}")
         return jsonify({'error': str(e)}), 500
