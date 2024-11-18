@@ -24,7 +24,7 @@ class Config:
     }
     
     MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY')
-    MAILGUN_DOMAIN = os.environ.get('MAILGUN_DOMAIN', 'sandbox918d0ad832384ac98c085c3512896938.mailgun.org')
+    MAILGUN_DOMAIN = os.environ.get('MAILGUN_DOMAIN')
     
     def __init__(self):
         if not self.MONGODB_SETTINGS['host']:

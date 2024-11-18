@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, url_for, current_app
+from flask import Blueprint, jsonify, request, url_for, current_app, redirect
 from .services.newsletter import get_newsletter, fetch_tldr_content
 from datetime import datetime
 import pytz
@@ -10,6 +10,7 @@ from flask import make_response
 from .services.mailgun_service import MailgunService
 from .models.subscriber import Subscriber
 import secrets
+
 
 
 
@@ -251,23 +252,40 @@ def subscribe():
             
         # 检查邮箱是否已存在
         existing_subscriber = Subscriber.objects(email=email).first()
-        if existing_subscriber and existing_subscriber.confirmed:
-            return jsonify({'error': '该邮箱已订阅'}), 400
-            
+        if existing_subscriber:
+            if existing_subscriber.confirmed:
+                return jsonify({'error': '该邮箱已订阅'}), 400
+            else:
+                # 重新发送确认邮件
+                confirmation_link = url_for(
+                    'main.confirm_subscription',  # 注意这里添加了 'main.' 前缀
+                    token=existing_subscriber.confirmation_token,
+                    _external=True
+                )
+                
+                mailgun = MailgunService(
+                    current_app.config['MAILGUN_API_KEY'],
+                    current_app.config['MAILGUN_DOMAIN']
+                )
+                
+                mailgun.send_confirmation_email(email, confirmation_link)
+                
+                return jsonify({
+                    'message': '确认邮件已重新发送，请查收并点击确认链接完成订阅'
+                })
+        
         # 生成确认令牌
         confirmation_token = secrets.token_urlsafe(32)
         
-        # 创建或更新订阅者
-        subscriber = Subscriber.objects(email=email).modify(
-            upsert=True,
-            new=True,
-            set__email=email,
-            set__confirmation_token=confirmation_token
-        )
+        # 创建新订阅者
+        subscriber = Subscriber(
+            email=email,
+            confirmation_token=confirmation_token
+        ).save()
         
         # 生成确认链接
         confirmation_link = url_for(
-            'confirm_subscription',
+            'main.confirm_subscription',  # 注意这里添加了 'main.' 前缀
             token=confirmation_token,
             _external=True
         )
@@ -287,27 +305,27 @@ def subscribe():
     except Exception as e:
         logging.error(f"Subscription error: {str(e)}")
         return jsonify({'error': '订阅失败，请稍后重试'}), 500
-
-@bp.route('/api/test-mailgun', methods=['GET'])
-def test_mailgun():
+    
+    
+@bp.route('/api/confirm/<token>', methods=['GET'])
+def confirm_subscription(token):
     try:
-        mailgun = MailgunService(
-            current_app.config['MAILGUN_API_KEY'],
-            current_app.config['MAILGUN_DOMAIN']
-        )
+        subscriber = Subscriber.objects(confirmation_token=token).first()
         
-        # 发送测试邮件到你的邮箱
-        result = mailgun.send_simple_message(
-            "你的邮箱地址",  # 替换成你的邮箱
-            "TLDR Chinese - 测试邮件",
-            "这是一封测试邮件，用于验证 Mailgun 集成是否成功。"
-        )
+        if not subscriber:
+            # 重定向到错误页面
+            return redirect(f"{current_app.config['FRONTEND_URL']}/subscription/error?message=invalid_token")
+            
+        if subscriber.confirmed:
+            # 重定向到已确认页面
+            return redirect(f"{current_app.config['FRONTEND_URL']}/subscription/success?status=already_confirmed")
+            
+        # 确认订阅
+        subscriber.confirm_subscription()
         
-        return jsonify({
-            'message': '测试邮件已发送',
-            'result': result
-        })
+        # 重定向到成功页面
+        return redirect(f"{current_app.config['FRONTEND_URL']}/subscription/success")
         
     except Exception as e:
-        logging.error(f"Mailgun test failed: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        logging.error(f"Confirmation error: {str(e)}")
+        return redirect(f"{current_app.config['FRONTEND_URL']}/subscription/error")

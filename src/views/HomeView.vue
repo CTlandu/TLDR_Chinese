@@ -28,15 +28,25 @@
           class="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-2xl mx-auto"
         >
           <input
+            v-model="email"
             type="email"
             :placeholder="$t('emailPlaceholder')"
             class="input input-bordered input-lg w-full max-w-lg text-lg border-primary shadow-lg hover:shadow-primary/50 transition-all duration-300 animate-bounce-slow focus:animate-none"
+            :class="{ 'input-error': error }"
           />
           <button
+            @click="handleSubscribe"
+            :disabled="loading"
             class="btn btn-primary btn-lg text-lg min-w-[200px] hover:scale-105 transition-transform"
           >
-            {{ $t('subscribe') }}
+            {{ loading ? '订阅中...' : $t('subscribe') }}
           </button>
+        </div>
+
+        <div v-if="message" class="mt-4 text-center">
+          <div :class="error ? 'text-error' : 'text-success'">
+            {{ message }}
+          </div>
         </div>
 
         <p class="mt-8 text-lg opacity-75">
@@ -53,6 +63,7 @@
 <script>
 import Navbar from '../components/Navbar.vue';
 import LatestArticles from '../components/LatestArticles.vue';
+import axios from 'axios';
 
 export default {
   name: 'HomeView',
@@ -60,9 +71,59 @@ export default {
     Navbar,
     LatestArticles,
   },
+  data() {
+    return {
+      email: '',
+      loading: false,
+      message: '',
+      error: false,
+    };
+  },
   methods: {
     changeLanguage(lang) {
       this.$i18n.locale = lang;
+    },
+    async handleSubscribe() {
+      if (!this.email) {
+        this.showMessage('请输入邮箱地址', true);
+        return;
+      }
+
+      this.loading = true;
+      this.message = '';
+      this.error = false;
+
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        console.log('Using API URL:', API_URL);
+
+        const response = await axios.post(`${API_URL}/api/subscribe`, {
+          email: this.email,
+        });
+
+        console.log('Response:', response.data);
+        this.showMessage(response.data.message);
+        this.email = ''; // 清空输入框
+      } catch (error) {
+        console.error('Error details:', error);
+        this.showMessage(
+          error.response?.data?.error || '订阅失败，请稍后重试',
+          true
+        );
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    showMessage(msg, isError = false) {
+      this.message = msg;
+      this.error = isError;
+
+      // 3秒后清除消息
+      setTimeout(() => {
+        this.message = '';
+        this.error = false;
+      }, 3000);
     },
   },
 };

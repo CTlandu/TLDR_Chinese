@@ -1,6 +1,7 @@
 import requests
 from flask import current_app
 import logging
+from typing import Optional
 
 class MailgunService:
     def __init__(self, api_key: str, domain: str):
@@ -67,7 +68,11 @@ class MailgunService:
     def send_simple_message(self, to_email: str, subject: str, text: str) -> dict:
         """发送简单的测试邮件"""
         try:
-            return requests.post(
+            # 打印请求信息用于调试
+            logging.info(f"Sending email to: {to_email}")
+            logging.info(f"Using domain: {self.domain}")
+            
+            response = requests.post(
                 f"{self.base_url}/messages",
                 auth=("api", self.api_key),
                 data={
@@ -76,7 +81,25 @@ class MailgunService:
                     "subject": subject,
                     "text": text
                 }
-            ).json()
+            )
+            
+            # 打印响应信息
+            logging.info(f"Status code: {response.status_code}")
+            logging.info(f"Response text: {response.text}")
+            
+            # 检查响应状态码
+            response.raise_for_status()
+            
+            # 尝试解析 JSON 响应
+            try:
+                return response.json()
+            except ValueError:
+                # 如果响应不是 JSON 格式，返回原始响应文本
+                return {"message": response.text}
+                
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Request failed: {str(e)}")
+            raise
         except Exception as e:
-            logging.error(f"Failed to send test email: {str(e)}")
+            logging.error(f"Unexpected error: {str(e)}")
             raise
