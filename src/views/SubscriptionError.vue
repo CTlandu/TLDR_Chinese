@@ -16,6 +16,7 @@
 
 <script>
 import Navbar from '../components/Navbar.vue';
+import { useRouter } from 'vue-router';
 
 export default {
   name: 'SubscriptionError',
@@ -28,8 +29,17 @@ export default {
     };
   },
   created() {
-    // 检查URL参数
+    const router = useRouter();
     const message = this.$route.query.message;
+    const token = this.$route.query.token;
+
+    // 如果没有任何参数，重定向到首页
+    if (!message && !token) {
+      router.push('/');
+      return;
+    }
+
+    // 根据不同的错误消息显示不同的提示
     if (message === 'invalid_token') {
       this.message = '无效的确认链接。\n请重新尝试订阅。';
     }

@@ -326,7 +326,7 @@ def confirm_subscription(token):
             
         subscriber.confirm_subscription()
         
-        redirect_url = f"{frontend_url}/subscription/success"
+        redirect_url = f"{frontend_url}/subscription/success?verified=true&token={token}"
         logging.info(f"Redirecting to: {redirect_url}")
         return redirect(redirect_url)
         
