@@ -31,6 +31,7 @@
             v-model="email"
             type="email"
             :placeholder="$t('emailPlaceholder')"
+            @keyup.enter="handleSubscribe"
             class="input input-bordered input-lg w-full max-w-lg text-lg border-primary shadow-lg hover:shadow-primary/50 transition-all duration-300 animate-bounce-slow focus:animate-none"
             :class="{ 'input-error': error }"
           />

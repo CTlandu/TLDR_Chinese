@@ -311,20 +311,24 @@ def subscribe():
 def confirm_subscription(token):
     try:
         subscriber = Subscriber.objects(confirmation_token=token).first()
+        frontend_url = current_app.config['FRONTEND_URL']
+        logging.info(f"Frontend URL: {frontend_url}")
         
         if not subscriber:
-            # 重定向到错误页面
-            return redirect(f"{current_app.config['FRONTEND_URL']}/subscription/error?message=invalid_token")
+            redirect_url = f"{frontend_url}/subscription/error?message=invalid_token"
+            logging.info(f"Redirecting to: {redirect_url}")
+            return redirect(redirect_url)
             
         if subscriber.confirmed:
-            # 重定向到已确认页面
-            return redirect(f"{current_app.config['FRONTEND_URL']}/subscription/success?status=already_confirmed")
+            redirect_url = f"{frontend_url}/subscription/success?status=already_confirmed"
+            logging.info(f"Redirecting to: {redirect_url}")
+            return redirect(redirect_url)
             
-        # 确认订阅
         subscriber.confirm_subscription()
         
-        # 重定向到成功页面
-        return redirect(f"{current_app.config['FRONTEND_URL']}/subscription/success")
+        redirect_url = f"{frontend_url}/subscription/success"
+        logging.info(f"Redirecting to: {redirect_url}")
+        return redirect(redirect_url)
         
     except Exception as e:
         logging.error(f"Confirmation error: {str(e)}")
