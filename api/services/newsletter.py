@@ -14,64 +14,60 @@ import json
 @lru_cache(maxsize=128)
 def get_newsletter(date=None):
     try:
-        if not date:
-            et = pytz.timezone('US/Eastern')
-            date = datetime.now(et).strftime('%Y-%m-%d')
-            
-        date_obj = datetime.strptime(date, '%Y-%m-%d').date()  # 只获取日期部分
+        et = pytz.timezone('US/Eastern')
+        now_et = datetime.now(et)
         
-        # 检查是否是未来日期
-        if date_obj > datetime.now().date():
-            logging.warning(f"Future date requested: {date}, returning latest available newsletter")
+        if not date:
+            date = now_et.strftime('%Y-%m-%d')
+        
+        # 将输入的日期转换为美东时间的日期对象
+        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        date_obj_et = et.localize(date_obj)
+        date_obj_et = date_obj_et.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # 检查是否是未来日期（相对于美东时间）
+        if date_obj_et.date() > now_et.date():
+            logging.warning(f"Future date requested: {date} ET, returning latest available newsletter")
             latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
             if latest_newsletter:
                 logging.info(f"Found latest newsletter from: {latest_newsletter.date}")
                 return latest_newsletter.sections
             return []
             
-        # 首先查找数据库中请求的日期
-        newsletter = DailyNewsletter.objects(date=date_obj).first()
+        # 首先查找数据库中请求的日期（使用美东时间的日期）
+        newsletter = DailyNewsletter.objects(date=date_obj_et.date()).first()
         if newsletter:
-            logging.info(f"Found newsletter in database for {date}")
+            logging.info(f"Found newsletter in database for {date} ET")
             return newsletter.sections
             
         # 如果数据库中没有，尝试从源站获取
-        logging.info(f"Newsletter not found in database, fetching from source")
+        logging.info(f"Newsletter not found in database, fetching from source for {date} ET")
         articles = fetch_tldr_content(date)
         
         if not articles:
-            logging.warning(f"No content available for date: {date}, trying to get latest available")
-            # 如果获取不到内容，返回数据库中最新的内容
+            logging.warning(f"No content available for date: {date} ET, trying to get latest available")
             latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
             if latest_newsletter:
                 logging.info(f"Returning latest available newsletter from: {latest_newsletter.date}")
                 return latest_newsletter.sections
             return []
             
-        # 如果获取到了内容，保存到数据库
+        # 如果获取到了内容，保存到数据库（使用美东时间的日期）
         try:
             newsletter = DailyNewsletter(
-                date=date_obj,
+                date=date_obj_et.date(),
                 sections=articles
             )
             newsletter.save()
-            logging.info(f"Successfully saved newsletter to database")
+            logging.info(f"Successfully saved newsletter to database for {date} ET")
             return articles
             
         except Exception as e:
             logging.error(f"Database save error: {str(e)}")
-            return articles  # 即使保存失败也返回获取到的内容
+            return articles
             
     except Exception as e:
         logging.error(f"Error in get_newsletter: {str(e)}")
-        # 发生错误时也尝试返回最新的内容
-        try:
-            latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
-            if latest_newsletter:
-                logging.info(f"Returning latest available newsletter after error")
-                return latest_newsletter.sections
-        except Exception as inner_e:
-            logging.error(f"Error getting latest newsletter: {str(inner_e)}")
         return []
 
 def fetch_tldr_content(date):

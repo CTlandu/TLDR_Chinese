@@ -101,17 +101,22 @@ def get_newsletter_by_date(date):
 @bp.route('/api/wechat/newsletter/<date>')
 def get_wechat_newsletter(date):
     try:
-        # 直接使用 get_newsletter 函数获取内容
-        articles = get_newsletter(date)
+        # 转换为美东时间
+        et = pytz.timezone('US/Eastern')
+        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        date_et = et.localize(date_obj)
+        
+        # 使用美东时间的日期获取新闻
+        articles = get_newsletter(date_et.strftime('%Y-%m-%d'))
         
         if not articles:
-            logging.warning(f"No content available for date: {date}")
+            logging.warning(f"No content available for date: {date} ET")
             return jsonify({
-                'error': f'未找到 {date} 的新闻内容，可能是无效日期或内容尚未发布',
+                'error': f'未找到 {date} (美东时间) 的新闻内容，可能是无效日期或内容尚未发布',
                 'articles': [],
                 'currentDate': date
             }), 404
-            
+        
         # 处理文章内容，生成HTML
         html_content = []
         html_content.append(f'<div style="margin-bottom: 20px; text-align: center; font-size: 20px; font-weight: bold;">TLDR每日科技新闻 【{date}】</div>')
