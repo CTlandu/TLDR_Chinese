@@ -18,10 +18,10 @@ def get_newsletter(date=None):
             et = pytz.timezone('US/Eastern')
             date = datetime.now(et).strftime('%Y-%m-%d')
             
-        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        date_obj = datetime.strptime(date, '%Y-%m-%d').date()  # 只获取日期部分
         
         # 检查是否是未来日期
-        if date_obj.date() > datetime.now().date():
+        if date_obj > datetime.now().date():
             logging.warning(f"Future date requested: {date}, returning latest available newsletter")
             latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
             if latest_newsletter:
@@ -29,7 +29,7 @@ def get_newsletter(date=None):
                 return latest_newsletter.sections
             return []
             
-        # 首先查找数据库中请求���日期
+        # 首先查找数据库中请求的日期
         newsletter = DailyNewsletter.objects(date=date_obj).first()
         if newsletter:
             logging.info(f"Found newsletter in database for {date}")

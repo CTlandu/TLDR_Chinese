@@ -2,7 +2,8 @@ from api import db
 from datetime import datetime
 
 class DailyNewsletter(db.Document):
-    date = db.DateTimeField(required=True, unique=True)
+    # date = db.DateTimeField(required=True, unique=True)
+    date = db.DateField(required=True, unique=True)  # 只存储日期，不存储时间
     sections = db.ListField(db.DictField())
     created_at = db.DateTimeField(default=datetime.utcnow)
     

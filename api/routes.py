@@ -11,9 +11,6 @@ from .services.mailgun_service import MailgunService
 from .models.subscriber import Subscriber
 import secrets
 
-
-
-
 bp = Blueprint('main', __name__)
 
 
@@ -104,10 +101,28 @@ def get_newsletter_by_date(date):
 @bp.route('/api/wechat/newsletter/<date>')
 def get_wechat_newsletter(date):
     try:
-        articles = get_newsletter(date)
+        # 转换为美东时间的日期
+        et = pytz.timezone('US/Eastern')
+        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        et_date = date_obj.astimezone(et)
+        
+        # 检查是否已经存在当天的数据
+        newsletter = DailyNewsletter.objects(date=et_date.date()).first()
+        
+        if not newsletter:
+            # 只有在没有当天数据时才爬取
+            articles = fetch_tldr_content(date)
+            if articles:
+                newsletter = DailyNewsletter(
+                    date=et_date.date(),
+                    sections=articles
+                ).save()
+        else:
+            articles = newsletter.sections
+            
         if not articles:
             return jsonify({'error': 'No articles found'}), 404
-        
+            
         html_content = []
         html_content.append(f'<div style="margin-bottom: 20px; text-align: center; font-size: 20px; font-weight: bold;">TLDR每日科技新闻 【{date}】</div>')
         
