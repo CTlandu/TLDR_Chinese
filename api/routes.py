@@ -101,31 +101,22 @@ def get_newsletter_by_date(date):
 @bp.route('/api/wechat/newsletter/<date>')
 def get_wechat_newsletter(date):
     try:
-        # 转换为美东时间的日期
-        et = pytz.timezone('US/Eastern')
-        date_obj = datetime.strptime(date, '%Y-%m-%d')
-        et_date = date_obj.astimezone(et)
+        # 直接使用 get_newsletter 函数获取内容
+        articles = get_newsletter(date)
         
-        # 检查是否已经存在当天的数据
-        newsletter = DailyNewsletter.objects(date=et_date.date()).first()
-        
-        if not newsletter:
-            # 只有在没有当天数据时才爬取
-            articles = fetch_tldr_content(date)
-            if articles:
-                newsletter = DailyNewsletter(
-                    date=et_date.date(),
-                    sections=articles
-                ).save()
-        else:
-            articles = newsletter.sections
-            
         if not articles:
-            return jsonify({'error': 'No articles found'}), 404
+            logging.warning(f"No content available for date: {date}")
+            return jsonify({
+                'error': f'未找到 {date} 的新闻内容，可能是无效日期或内容尚未发布',
+                'articles': [],
+                'currentDate': date
+            }), 404
             
+        # 处理文章内容，生成HTML
         html_content = []
         html_content.append(f'<div style="margin-bottom: 20px; text-align: center; font-size: 20px; font-weight: bold;">TLDR每日科技新闻 【{date}】</div>')
         
+        processed_articles = []
         for section in articles:
             processed_section = get_section_emoji(section['section'])
             # 添加分区标题
@@ -166,28 +157,31 @@ def get_wechat_newsletter(date):
                     
                     '</div>'  # 结束文章容器
                 ]
-                
                 html_content.append(''.join(article_html))
+                
+                processed_articles.append({
+                    'title': title,
+                    'title_en': article['title_en'],
+                    'content': content,
+                    'content_en': article['content_en'],
+                    'url': url,
+                    'image_url': image_url,
+                    'section': processed_section
+                })
         
-        response = {
+        return jsonify({
             'html': '\n'.join(html_content),
-            'articles': [{
-                'title': get_title_emoji(clean_reading_time(article['title'])),
-                'title_en': article['title_en'],
-                'content': article['content'],
-                'content_en': article['content_en'],
-                'url': article['url'],
-                'image_url': article.get('image_url', ''),
-                'section': get_section_emoji(section['section'])
-            } for section in articles for article in section['articles']],
+            'articles': processed_articles,
             'currentDate': date
-        }
-        
-        return jsonify(response)
+        })
         
     except Exception as e:
         logging.error(f"Error in get_wechat_newsletter: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'error': '获取新闻内容时发生错误，请稍后重试',
+            'articles': [],
+            'currentDate': date
+        }), 500
 
 @bp.route('/api/latest-articles')
 def get_latest_articles():
