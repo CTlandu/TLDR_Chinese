@@ -117,66 +117,39 @@ def get_wechat_newsletter(date):
                 'currentDate': date
             }), 404
         
-        # 处理文章内容，生成HTML
-        html_content = []
-        html_content.append(f'<div style="margin-bottom: 20px; text-align: center; font-size: 20px; font-weight: bold;">TLDR每日科技新闻 【{date}】</div>')
+        # 需要排除的板块
+        excluded_sections = ['Programming, Design & Data Science', 'Quick Links']
         
-        processed_articles = []
+        # 创建扁平化的文章列表
+        flattened_articles = []
+        
         for section in articles:
-            processed_section = get_section_emoji(section['section'])
-            # 添加分区标题
-            html_content.append(
-                f'<div style="margin: 20px 0; padding: 10px 0; font-size: 18px; font-weight: bold; border-bottom: 1px solid #e5e5e5;">'
-                f'{processed_section}'
-                f'</div>'
-            )
+            # 跳过不需要的板块
+            if section['section'] in excluded_sections:
+                continue
+                
+            section_name = get_section_emoji(section['section'])
             
             for article in section['articles']:
-                # 清理和处理文章内容
-                title = clean_reading_time(article['title'])
-                title = get_title_emoji(title)
-                content = article['content']
-                url = article.get('url', '')
-                image_url = article.get('image_url', '')
+                # 清理中英文标题中的阅读时间
+                title_zh = clean_reading_time(article['title'])
+                title_en = clean_reading_time(article['title_en'])
                 
-                # 构建文章 HTML
-                article_html = [
-                    # 文章容器
-                    '<div style="margin-bottom: 25px;">',
-                    
-                    # 标题（中英双语）
-                    f'<div style="font-size: 17px; font-weight: bold; margin-bottom: 10px; color: #333;">{title}</div>',
-                    f'<div style="font-size: 15px; color: #666; margin-bottom: 10px;">{article["title_en"]}</div>',
-                    
-                    # 图片（如果有）
-                    f'<img src="{image_url}" style="width: 100%; margin: 10px 0; border-radius: 4px;" />' if image_url else '',
-                    
-                    # 内容（中英双语）
-                    f'<div style="font-size: 15px; line-height: 1.6; color: #333; margin: 10px 0;">{content}</div>',
-                    f'<div style="font-size: 14px; line-height: 1.6; color: #666; margin: 10px 0;">{article["content_en"]}</div>',
-                    
-                    # 原文链接
-                    f'<div style="font-size: 14px; color: #666; margin-top: 8px;">',
-                    f'原文链接：<a href="{url}" style="color: #576b95; text-decoration: none;">{url}</a>',
-                    '</div>',
-                    
-                    '</div>'  # 结束文章容器
-                ]
-                html_content.append(''.join(article_html))
+                # 添加表情符号
+                title_zh = get_title_emoji(title_zh)
                 
-                processed_articles.append({
-                    'title': title,
-                    'title_en': article['title_en'],
-                    'content': content,
+                processed_article = {
+                    'title': title_zh,
+                    'title_en': title_en,
+                    'content': article['content'],
                     'content_en': article['content_en'],
-                    'url': url,
-                    'image_url': image_url,
-                    'section': processed_section
-                })
+                    'url': article.get('url', ''),
+                    'section': section_name
+                }
+                flattened_articles.append(processed_article)
         
         return jsonify({
-            'html': '\n'.join(html_content),
-            'articles': processed_articles,
+            'articles': flattened_articles,
             'currentDate': date
         })
         

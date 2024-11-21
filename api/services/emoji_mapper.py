@@ -1,3 +1,5 @@
+import re
+
 SECTION_EMOJI_MAP = {
     'Big Tech': '🏢',
     'Startups': '🚀',
@@ -151,6 +153,22 @@ def get_title_emoji(title):
     return title
 
 def clean_reading_time(title):
-    # 移除阅读时间标记
-    import re
-    return re.sub(r'\s*\([0-9]+ (?:minute|分钟).*?\)', '', title) 
+    if not title:
+        return title
+        
+    # 更全面的正则表达式，匹配多种格式：
+    patterns = [
+        r'\s*\([0-9]+ (?:minute|分钟).*?\)',  # (5 minute read) 或 (5 分钟阅读)
+        r'\s*\（[0-9]+ (?:minute|分钟).*?\）',  # （5 minute read）或（5 分钟阅读）- 中文括号
+        r'\s*\([0-9]+(?:m|min).*?\)',  # (5m read) 或 (5min read)
+        r'\s*\（[0-9]+(?:m|min).*?\）',  # （5m read）或（5min read）
+        r'\s*[（(][0-9]+ ?分钟(?:阅读)?[)）]',  # (5分钟) 或 （5分钟阅读）
+        r'\s*（.*?(?:分钟|minute).*?）',  # 匹配任何包含"分钟"或"minute"的中文括号内容
+        r'\s*\(.*?(?:分钟|minute).*?\)',  # 匹配任何包含"分钟"或"minute"的英文括号内容
+    ]
+    
+    # 依次应用所有模式
+    for pattern in patterns:
+        title = re.sub(pattern, '', title)
+    
+    return title.strip()  # 移除可能残留的首尾空格 
