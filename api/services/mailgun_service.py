@@ -52,7 +52,9 @@ class MailgunService:
                     "o:dkim": "yes",
                     "o:tracking": "yes",
                     "o:tracking-clicks": "yes",
-                    "o:tracking-opens": "yes"
+                    "o:tracking-opens": "yes",
+                    "o:require-tls": "yes",
+                    "o:skip-verification": "no"
                 }
             )
         except Exception as e:

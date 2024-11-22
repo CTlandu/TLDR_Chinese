@@ -79,8 +79,11 @@ def generate_newsletter_html(newsletter) -> str:
             
         html += "</div>"
     
+    # 获取后端 URL
+    backend_url = current_app.config['BACKEND_URL'].rstrip('/')
+    
     # 添加页脚（包含版权信息）
-    html += """
+    html += f"""
         </div>
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; 
                     text-align: center; color: #7f8c8d;">
@@ -96,7 +99,7 @@ def generate_newsletter_html(newsletter) -> str:
                 </a>
             </p>
             <p style="margin: 10px 0; font-size: 12px;">
-                <a href="https://www.tldrnewsletter.cn/api/unsubscribe/{{{{ recipient.id }}}}" 
+                <a href="{backend_url}/api/unsubscribe/%recipient.id%" 
                    style="color: #3498db; text-decoration: none;">
                     取消订阅
                 </a>
