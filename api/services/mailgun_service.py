@@ -2,6 +2,8 @@ import requests
 from flask import current_app
 import logging
 from typing import Optional
+import json
+from api.models.subscriber import Subscriber
 
 class MailgunService:
     def __init__(self, api_key: str, domain: str):
@@ -16,9 +18,9 @@ class MailgunService:
                 f"{self.base_url}/messages",
                 auth=("api", self.api_key),
                 data={
-                    "from": f"TLDR Chinese <mailgun@{self.domain}>",
+                    "from": f"TLDR每日科技新闻 <TLDR科技日推@{self.domain}>",
                     "to": [to_email],
-                    "subject": "确认订阅 TLDR Chinese 每日科技新闻",
+                    "subject": "确认订阅 TLDR 科技日推",
                     "html": self._get_confirmation_template(confirmation_link)
                 }
             )
@@ -29,16 +31,28 @@ class MailgunService:
     def send_daily_newsletter(self, subscribers: list, subject: str, content: str) -> dict:
         """发送每日新闻邮件"""
         try:
+            # 为每个收件人准备变量
+            recipient_vars = {
+                email: {
+                    'id': str(Subscriber.objects(email=email).first().id)
+                } for email in subscribers
+            }
+            
             return requests.post(
                 f"{self.base_url}/messages",
                 auth=("api", self.api_key),
                 data={
-                    "from": f"TLDR Chinese <mailgun@{self.domain}>",
+                    "from": f"TLDR Chinese <newsletter@{self.domain}>",
                     "to": subscribers,
                     "subject": subject,
                     "html": content,
-                    "tracking-opens": "yes",
-                    "tracking-clicks": "yes"
+                    "recipient-variables": json.dumps(recipient_vars),  # 添加收件人变量
+                    "h:Reply-To": f"support@{self.domain}",
+                    "o:tag": ["daily-newsletter"],
+                    "o:dkim": "yes",
+                    "o:tracking": "yes",
+                    "o:tracking-clicks": "yes",
+                    "o:tracking-opens": "yes"
                 }
             )
         except Exception as e:
@@ -49,8 +63,8 @@ class MailgunService:
         """确认邮件的 HTML 模板"""
         return f"""
         <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2>确认订阅 TLDR Chinese</h2>
-            <p>感谢您订阅 TLDR Chinese 每日科技新闻！</p>
+            <h2>确认订阅 TLDR 科技日推</h2>
+            <p>感谢您订阅 TLDR 每日科技新闻！</p>
             <p>请点击下面的按钮确认您的订阅：</p>
             <p style="text-align: center;">
                 <a href="{confirmation_link}" 

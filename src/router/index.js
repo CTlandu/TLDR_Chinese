@@ -32,6 +32,11 @@ const routes = [
     name: 'SubscriptionError',
     component: SubscriptionError,
   },
+  {
+    path: '/subscription/unsubscribed',
+    name: 'UnsubscribedView',
+    component: UnsubscribedView,
+  },
 ];
 
 const router = createRouter({

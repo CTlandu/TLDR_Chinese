@@ -4,6 +4,7 @@ from datetime import datetime
 import pytz
 from datetime import timedelta
 from .services.emoji_mapper import get_section_emoji, clean_reading_time, get_title_emoji
+from .services.send_newsletter import generate_newsletter_html
 from .models.article import DailyNewsletter
 import logging
 from flask import make_response
@@ -320,3 +321,64 @@ def confirm_subscription(token):
     except Exception as e:
         logging.error(f"Confirmation error: {str(e)}")
         return redirect(f"{current_app.config['FRONTEND_URL']}/subscription/error")
+    
+    
+@bp.route('/api/test/send_newsletter', methods=['POST'])
+def test_send_newsletter():
+    try:
+        # 获取最新的 newsletter
+        latest_newsletter = DailyNewsletter.objects.order_by('-date').first()
+        
+        if not latest_newsletter:
+            return jsonify({'error': '没有找到可用的 newsletter'}), 404
+            
+        # 优化邮件主题，避免使用特殊字符
+        subject = f"TLDR 全球科技日报 {latest_newsletter.date.strftime('%Y-%m-%d')}"
+        html_content = generate_newsletter_html(latest_newsletter)
+        
+        # 创建 Mailgun 服务实例
+        mailgun = MailgunService(
+            current_app.config['MAILGUN_API_KEY'],
+            current_app.config['MAILGUN_DOMAIN']
+        )
+        
+        # 发送到测试邮箱
+        test_email = "jizhoutang@outlook.com"
+        response = mailgun.send_daily_newsletter(
+            [test_email],
+            subject,
+            html_content
+        )
+        
+        # 处理响应
+        return jsonify({
+            'message': f'测试邮件已发送至 {test_email}',
+            'status_code': response.status_code,
+            'response_text': response.text
+        })
+        
+    except Exception as e:
+        logging.error(f"Failed to send test newsletter: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+    
+    
+@bp.route('/api/unsubscribe/<token>', methods=['GET'])
+def unsubscribe(token):
+    try:
+        subscriber = Subscriber.objects(confirmation_token=token).first()
+        frontend_url = current_app.config['FRONTEND_URL']
+        
+        if not subscriber:
+            return redirect(f"{frontend_url}/subscription/error?message=invalid_token")
+            
+        # 删除订阅者
+        subscriber.delete()
+        
+        return redirect(f"{frontend_url}/subscription/unsubscribed?status=success")
+        
+    except Exception as e:
+        logging.error(f"Unsubscribe error: {str(e)}")
+        return redirect(f"{frontend_url}/subscription/error")
+    
+    
+    

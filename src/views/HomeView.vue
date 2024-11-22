@@ -124,7 +124,7 @@ export default {
       setTimeout(() => {
         this.message = '';
         this.error = false;
-      }, 3000);
+      }, 5000);
     },
   },
 };
