@@ -4,6 +4,7 @@ import NewsletterView from '../views/NewsletterView.vue';
 import SubscriptionSuccess from '../views/SubscriptionSuccess.vue';
 import SubscriptionError from '../views/SubscriptionError.vue';
 import NotFound from '../views/NotFound.vue';
+import UnsubscribedView from '../views/UnsubscribedView.vue';
 
 const routes = [
   {
@@ -33,7 +34,7 @@ const routes = [
     component: SubscriptionError,
   },
   {
-    path: '/subscription/unsubscribed',
+    path: '/unsubscribed',
     name: 'UnsubscribedView',
     component: UnsubscribedView,
   },

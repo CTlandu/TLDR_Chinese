@@ -362,23 +362,28 @@ def test_send_newsletter():
         return jsonify({'error': str(e)}), 500
     
     
-@bp.route('/api/unsubscribe/<token>', methods=['GET'])
-def unsubscribe(token):
+@bp.route('/api/unsubscribe/<subscriber_id>',methods=['GET'])
+def unsubscribe(subscriber_id):
     try:
-        subscriber = Subscriber.objects(confirmation_token=token).first()
-        frontend_url = current_app.config['FRONTEND_URL']
+        # 查找并更新订阅者状态
+        subscriber = Subscriber.objects(id=subscriber_id).first()
         
         if not subscriber:
-            return redirect(f"{frontend_url}/subscription/error?message=invalid_token")
+            return jsonify({'error': '未找到订阅者'}), 404
+            
+        # 如果已经取消订阅，直接重定向
+        if not subscriber.confirmed:
+            return redirect(f"{current_app.config['FRONTEND_URL']}/unsubscribed")
             
         # 删除订阅者
         subscriber.delete()
         
-        return redirect(f"{frontend_url}/subscription/unsubscribed?status=success")
+        # 重定向到前端的取消订阅成功页面
+        return redirect(f"{current_app.config['FRONTEND_URL']}/unsubscribed")
         
     except Exception as e:
         logging.error(f"Unsubscribe error: {str(e)}")
-        return redirect(f"{frontend_url}/subscription/error")
+        return jsonify({'error': str(e)}), 500
     
     
     
