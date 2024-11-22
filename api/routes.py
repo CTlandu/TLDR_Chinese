@@ -117,7 +117,7 @@ def get_wechat_newsletter(date):
                 'currentDate': date
             }), 404
         
-        # 需要排除的板���
+        # 需要排除的板
         excluded_sections = ['Programming, Design & Data Science', 'Quick Links']
         
         # 创建扁平化的文章列表
@@ -244,33 +244,29 @@ def subscribe():
             if existing_subscriber.confirmed:
                 return jsonify({'error': '该邮箱已订阅'}), 400
             else:
-                # 如果存在未确认的订阅，更新 token
-                confirmation_token = secrets.token_urlsafe(32)
-                existing_subscriber.confirmation_token = confirmation_token
-                existing_subscriber.save()
+                # 如果存在未确认的订阅，直接使用现有的 token 重新发送确认邮件
+                confirmation_link = url_for(
+                    'main.confirm_subscription',
+                    token=existing_subscriber.confirmation_token,
+                    _external=True
+                )
+                
+                # 创建 Mailgun 服务实例并发送确认邮件
+                mailgun = MailgunService(
+                    current_app.config['MAILGUN_API_KEY'],
+                    current_app.config['MAILGUN_DOMAIN']
+                )
+                
+                mailgun.send_confirmation_email(email, confirmation_link)
+                return jsonify({'message': '确认邮件已重新发送，请查收'})
         else:
             # 创建新订阅者
             confirmation_token = secrets.token_urlsafe(32)
             subscriber = Subscriber(
-                email=email,  # 存储小写的邮箱
+                email=email,
                 confirmation_token=confirmation_token
             )
             subscriber.save()
-        
-        # 生成确认链接
-        confirmation_link = url_for(
-            'main.confirm_subscription',  # 注意这里添加了 'main.' 前缀
-            token=confirmation_token,
-            _external=True
-        )
-        
-        # 发送确认邮件
-        mailgun = MailgunService(
-            current_app.config['MAILGUN_API_KEY'],
-            current_app.config['MAILGUN_DOMAIN']
-        )
-        
-        mailgun.send_confirmation_email(email, confirmation_link)
         
         return jsonify({
             'message': '确认邮件已发送，请查收并点击确认链接完成订阅'
