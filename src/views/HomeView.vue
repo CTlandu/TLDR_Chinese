@@ -98,8 +98,10 @@ export default {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         console.log('Using API URL:', API_URL);
 
+        const normalizedEmail = this.email.toLowerCase().trim();
+
         const response = await axios.post(`${API_URL}/api/subscribe`, {
-          email: this.email,
+          email: normalizedEmail,
         });
 
         console.log('Response:', response.data);

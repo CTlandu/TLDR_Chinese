@@ -4,7 +4,6 @@ from datetime import datetime
 import pytz
 from datetime import timedelta
 from .services.emoji_mapper import get_section_emoji, clean_reading_time, get_title_emoji
-from .services.send_newsletter import generate_newsletter_html
 from .models.article import DailyNewsletter
 import logging
 from flask import make_response
@@ -118,7 +117,7 @@ def get_wechat_newsletter(date):
                 'currentDate': date
             }), 404
         
-        # 需要排除的板块
+        # 需要排除的板���
         excluded_sections = ['Programming, Design & Data Science', 'Quick Links']
         
         # 创建扁平化的文章列表
@@ -233,43 +232,30 @@ def get_latest_articles():
 def subscribe():
     try:
         data = request.get_json()
-        email = data.get('email')
+        email = data.get('email', '').lower().strip()  # 转换为小写并去除空格
         
         if not email:
             return jsonify({'error': '请提供邮箱地址'}), 400
             
         # 检查邮箱是否已存在
         existing_subscriber = Subscriber.objects(email=email).first()
+        
         if existing_subscriber:
             if existing_subscriber.confirmed:
                 return jsonify({'error': '该邮箱已订阅'}), 400
             else:
-                # 重新发送确认邮件
-                confirmation_link = url_for(
-                    'main.confirm_subscription',  # 注意这里添加了 'main.' 前缀
-                    token=existing_subscriber.confirmation_token,
-                    _external=True
-                )
-                
-                mailgun = MailgunService(
-                    current_app.config['MAILGUN_API_KEY'],
-                    current_app.config['MAILGUN_DOMAIN']
-                )
-                
-                mailgun.send_confirmation_email(email, confirmation_link)
-                
-                return jsonify({
-                    'message': '确认邮件已重新发送，请查收并点击确认链接完成订阅'
-                })
-        
-        # 生成确认令牌
-        confirmation_token = secrets.token_urlsafe(32)
-        
-        # 创建新订���者
-        subscriber = Subscriber(
-            email=email,
-            confirmation_token=confirmation_token
-        ).save()
+                # 如果存在未确认的订阅，更新 token
+                confirmation_token = secrets.token_urlsafe(32)
+                existing_subscriber.confirmation_token = confirmation_token
+                existing_subscriber.save()
+        else:
+            # 创建新订阅者
+            confirmation_token = secrets.token_urlsafe(32)
+            subscriber = Subscriber(
+                email=email,  # 存储小写的邮箱
+                confirmation_token=confirmation_token
+            )
+            subscriber.save()
         
         # 生成确认链接
         confirmation_link = url_for(
@@ -329,15 +315,12 @@ def confirm_subscription(token):
 @bp.route('/api/test/send_newsletter', methods=['POST'])
 def test_send_newsletter():
     try:
-        # 获取最新的 newsletter
         latest_newsletter = DailyNewsletter.objects.order_by('-date').first()
         
         if not latest_newsletter:
             return jsonify({'error': '没有找到可用的 newsletter'}), 404
             
-        # 优化邮件主题，避免使用特殊字符
         subject = f"TLDR 全球科技日报 {latest_newsletter.date.strftime('%Y-%m-%d')}"
-        html_content = generate_newsletter_html(latest_newsletter)
         
         # 创建 Mailgun 服务实例
         mailgun = MailgunService(
@@ -345,7 +328,9 @@ def test_send_newsletter():
             current_app.config['MAILGUN_DOMAIN']
         )
         
-        # 发送到测试邮箱
+        # 使用 mailgun 实例生成 HTML
+        html_content = mailgun.generate_newsletter_html(latest_newsletter)
+        
         test_email = "jizhoutang@outlook.com"
         response = mailgun.send_daily_newsletter(
             [test_email],
@@ -353,7 +338,6 @@ def test_send_newsletter():
             html_content
         )
         
-        # 处理响应
         return jsonify({
             'message': f'测试邮件已发送至 {test_email}',
             'status_code': response.status_code,
@@ -412,13 +396,15 @@ def send_daily_newsletter_api():
             
         # 准备邮件内容
         subject = f"TLDR Chinese 每日科技新闻 【{latest_newsletter.date.strftime('%Y-%m-%d')}】"
-        html_content = generate_newsletter_html(latest_newsletter)
         
-        # 发送邮件
+        # 创建 Mailgun 服务实例
         mailgun = MailgunService(
             current_app.config['MAILGUN_API_KEY'],
             current_app.config['MAILGUN_DOMAIN']
         )
+        
+        # 使用 mailgun 实例生成 HTML
+        html_content = mailgun.generate_newsletter_html(latest_newsletter)
         
         response = mailgun.send_daily_newsletter(
             subscriber_emails,
