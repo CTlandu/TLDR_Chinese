@@ -265,7 +265,7 @@ def subscribe():
         # 生成确认令牌
         confirmation_token = secrets.token_urlsafe(32)
         
-        # 创建新订阅者
+        # 创建新订���者
         subscriber = Subscriber(
             email=email,
             confirmation_token=confirmation_token
@@ -300,6 +300,9 @@ def confirm_subscription(token):
     try:
         subscriber = Subscriber.objects(confirmation_token=token).first()
         frontend_url = current_app.config['FRONTEND_URL']
+        
+        # 添加日志
+        logging.info(f"Confirming subscription with token: {token}")
         logging.info(f"Frontend URL: {frontend_url}")
         
         if not subscriber:
@@ -320,7 +323,7 @@ def confirm_subscription(token):
         
     except Exception as e:
         logging.error(f"Confirmation error: {str(e)}")
-        return redirect(f"{current_app.config['FRONTEND_URL']}/subscription/error")
+        return redirect(f"{frontend_url}/subscription/error")
     
     
 @bp.route('/api/test/send_newsletter', methods=['POST'])

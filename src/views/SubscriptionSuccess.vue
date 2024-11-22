@@ -27,23 +27,10 @@ export default {
     return {
       message:
         '感谢您订阅 TLDR Chinese 每日科技新闻。\n您将开始收到我们的每日更新。',
-      isVerified: false,
     };
   },
   created() {
-    const router = useRouter();
-    const verified = this.$route.query.verified;
-    const token = this.$route.query.token;
-
-    // 如果没有验证参数或令牌，重定向到首页
-    if (!verified || !token) {
-      router.push('/');
-      return;
-    }
-
-    this.isVerified = true;
-
-    // 检查其他状态
+    // 移除这些检查，让页面直接显示
     const status = this.$route.query.status;
     if (status === 'already_confirmed') {
       this.message = '您已经成功订阅过了！\n我们会继续为您发送每日科技新闻。';
