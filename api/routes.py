@@ -386,4 +386,54 @@ def unsubscribe(subscriber_id):
         return jsonify({'error': str(e)}), 500
     
     
+@bp.route('/api/send_daily_newsletter', methods=['POST'])
+def send_daily_newsletter_api():
+    try:
+        # 验证请求（可以添加 API key 验证）
+        api_key = request.headers.get('X-API-Key')
+        if api_key != current_app.config.get('NEWSLETTER_API_KEY'):
+            return jsonify({'error': '未授权的请求'}), 401
+            
+        # 获取最新的 newsletter
+        latest_newsletter = DailyNewsletter.objects.order_by('-date').first()
+        
+        if not latest_newsletter:
+            return jsonify({'error': '没有找到可用的 newsletter'}), 404
+            
+        # 获取所有已确认的订阅者
+        confirmed_subscribers = Subscriber.objects(confirmed=True).all()
+        subscriber_emails = [s.email for s in confirmed_subscribers]
+        
+        if not subscriber_emails:
+            return jsonify({'message': '没有已确认的订阅者'}), 200
+            
+        # 准备邮件内容
+        subject = f"TLDR Chinese 每日科技新闻 【{latest_newsletter.date.strftime('%Y-%m-%d')}】"
+        html_content = generate_newsletter_html(latest_newsletter)
+        
+        # 发送邮件
+        mailgun = MailgunService(
+            current_app.config['MAILGUN_API_KEY'],
+            current_app.config['MAILGUN_DOMAIN']
+        )
+        
+        response = mailgun.send_daily_newsletter(
+            subscriber_emails,
+            subject,
+            html_content
+        )
+        
+        return jsonify({
+            'message': f'成功发送每日新闻给 {len(subscriber_emails)} 位订阅者',
+            'date': latest_newsletter.date.strftime('%Y-%m-%d'),
+            'subscriber_count': len(subscriber_emails),
+            'status_code': response.status_code,
+            'response_text': response.text
+        })
+        
+    except Exception as e:
+        logging.error(f"Failed to send daily newsletter: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+    
+    
     
