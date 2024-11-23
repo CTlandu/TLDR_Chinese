@@ -25,13 +25,19 @@ def get_newsletter(date=None):
         date_obj_et = et.localize(date_obj)
         date_obj_et = date_obj_et.replace(hour=0, minute=0, second=0, microsecond=0)
         
+        # 添加详细日志
+        logging.info(f"请求日期: {date}")
+        logging.info(f"当前美东时间日期: {now_et.date()}")
+        logging.info(f"转换为美东时间日期: {date_obj_et.date()}")
+        
         # 检查是否是未来日期（相对于美东时间）
         if date_obj_et.date() > now_et.date():
-            logging.warning(f"Future date requested: {date} ET, returning latest available newsletter")
+            logging.warning(f"请求的未来日期: {date} ET, 返回最新可用简报")
             latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
             if latest_newsletter:
                 logging.info(f"Found latest newsletter from: {latest_newsletter.date}")
                 return latest_newsletter.sections
+            logging.warning("数据库中没有简报")
             return []
             
         # 首先查找数据库中请求的日期（使用美东时间的日期）
