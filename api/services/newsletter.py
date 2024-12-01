@@ -11,8 +11,12 @@ from ..models.article import DailyNewsletter
 import logging
 import json
 
-@lru_cache(maxsize=128)
 def get_newsletter(date=None):
+    """
+    获取每日新闻简报
+    :param date: 日期字符串，格式为 YYYY-MM-DD
+    :return: 新闻文章列表
+    """
     try:
         et = pytz.timezone('US/Eastern')
         now_et = datetime.now(et)
