@@ -13,8 +13,10 @@ import secrets
 
 bp = Blueprint('main', __name__)
 
+#######################
+# CORS Configuration #
+#######################
 
-# 添加在文件开头的导入语句之后，但在所有路由之前
 @bp.after_request
 def after_request(response):
     origin = request.headers.get('Origin')
@@ -35,6 +37,10 @@ def after_request(response):
         response.headers.add('Access-Control-Allow-Credentials', 'false')
     return response
 
+########################
+# Helper Functions     #
+########################
+
 def get_available_dates(days=7):
     et = pytz.timezone('US/Eastern')
     dates = []
@@ -45,6 +51,10 @@ def get_available_dates(days=7):
         dates.append(date.strftime('%Y-%m-%d'))
     
     return dates
+
+########################
+# Core Website Routes  #
+########################
 
 @bp.route('/api/newsletter/<date>')
 def get_newsletter_by_date(date):
@@ -97,69 +107,6 @@ def get_newsletter_by_date(date):
             'currentDate': date,
             'dates': get_available_dates()
         }), 200
-
-@bp.route('/api/wechat/newsletter/<date>')
-def get_wechat_newsletter(date):
-    try:
-        # 转换为美东时间
-        et = pytz.timezone('US/Eastern')
-        date_obj = datetime.strptime(date, '%Y-%m-%d')
-        date_et = et.localize(date_obj)
-        
-        # 使用美东时间的日期获取新闻
-        articles = get_newsletter(date_et.strftime('%Y-%m-%d'))
-        
-        if not articles:
-            logging.warning(f"No content available for date: {date} ET")
-            return jsonify({
-                'error': f'未找到 {date} (美东时间) 的新闻内容，可能是无效日期或内容尚未发布',
-                'articles': [],
-                'currentDate': date
-            }), 404
-        
-        # 需要排除的板
-        excluded_sections = ['Programming, Design & Data Science', 'Quick Links']
-        
-        # 创建扁平化的文章列表
-        flattened_articles = []
-        
-        for section in articles:
-            # 跳过不需要的板块
-            if section['section'] in excluded_sections:
-                continue
-                
-            section_name = get_section_emoji(section['section'])
-            
-            for article in section['articles']:
-                # 清理中英文标题中的阅读时间
-                title_zh = clean_reading_time(article['title'])
-                title_en = clean_reading_time(article['title_en'])
-                
-                # 添加表情符号
-                title_zh = get_title_emoji(title_zh)
-                
-                processed_article = {
-                    'title': title_zh,
-                    'title_en': title_en,
-                    'content': article['content'],
-                    'content_en': article['content_en'],
-                    'url': article.get('url', ''),
-                    'section': section_name
-                }
-                flattened_articles.append(processed_article)
-        
-        return jsonify({
-            'articles': flattened_articles,
-            'currentDate': date
-        })
-        
-    except Exception as e:
-        logging.error(f"Error in get_wechat_newsletter: {str(e)}")
-        return jsonify({
-            'error': '获取新闻内容时发生错误，请稍后重试',
-            'articles': [],
-            'currentDate': date
-        }), 500
 
 @bp.route('/api/latest-articles')
 def get_latest_articles():
@@ -227,6 +174,130 @@ def get_latest_articles():
     except Exception as e:
         logging.error(f"Error in get_latest_articles: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/latest-articles-by-section')
+def get_latest_articles_by_section():
+    try:
+        # 获取所有newsletter，按日期降序排列
+        all_newsletters = DailyNewsletter.objects().order_by('-date')
+        
+        # 定义我们想要的分区
+        sections_to_show = {
+            'Big Tech & Startups': [],
+            'Science & Futuristic Technology': [],
+            'Programming, Design & Data Science': [],
+            'Miscellaneous': [],
+            'Quick Links': []
+        }
+        
+        # 获取当前时间用于计算相对时间
+        now = datetime.now(pytz.timezone('US/Eastern'))
+        
+        # 遍历所有newsletter
+        for newsletter in all_newsletters:
+            newsletter_date = newsletter.date
+            days_ago = (now.date() - newsletter_date).days
+            
+            # 格式化相对时间
+            if days_ago == 0:
+                relative_time = "今天"
+            elif days_ago == 1:
+                relative_time = "昨天"
+            else:
+                relative_time = f"{days_ago}天前"
+            
+            # 处理每个分区
+            for section in newsletter.sections:
+                section_name = section['section']
+                if section_name in sections_to_show and len(sections_to_show[section_name]) < 5:
+                    # 处理该分区的文章
+                    for article in section['articles']:
+                        if article.get('image_url') and len(sections_to_show[section_name]) < 5:
+                            processed_article = {
+                                'title': get_title_emoji(clean_reading_time(article['title'])),
+                                'content': article['content'],
+                                'url': article['url'],
+                                'image_url': article['image_url'],
+                                'relative_time': relative_time
+                            }
+                            sections_to_show[section_name].append(processed_article)
+        
+        return jsonify(sections_to_show)
+        
+    except Exception as e:
+        logging.error(f"Error in get_latest_articles_by_section: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+########################
+# WeChat Integration   #
+########################
+
+@bp.route('/api/wechat/newsletter/<date>')
+def get_wechat_newsletter(date):
+    try:
+        # 转换为美东时间
+        et = pytz.timezone('US/Eastern')
+        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        date_et = et.localize(date_obj)
+        
+        # 使用美东时间的日期获取新闻
+        articles = get_newsletter(date_et.strftime('%Y-%m-%d'))
+        
+        if not articles:
+            logging.warning(f"No content available for date: {date} ET")
+            return jsonify({
+                'error': f'未找到 {date} (美东时间) 的新闻内容，可能是无效日期或内容尚未发布',
+                'articles': [],
+                'currentDate': date
+            }), 404
+        
+        # 需要排除的板
+        excluded_sections = ['Programming, Design & Data Science', 'Quick Links']
+        
+        # 创建扁平化的文章列表
+        flattened_articles = []
+        
+        for section in articles:
+            # 跳过不需要的板块
+            if section['section'] in excluded_sections:
+                continue
+                
+            section_name = get_section_emoji(section['section'])
+            
+            for article in section['articles']:
+                # 清理中英文标题中的阅读时间
+                title_zh = clean_reading_time(article['title'])
+                title_en = clean_reading_time(article['title_en'])
+                
+                # 添加表情符号
+                title_zh = get_title_emoji(title_zh)
+                
+                processed_article = {
+                    'title': title_zh,
+                    'title_en': title_en,
+                    'content': article['content'],
+                    'content_en': article['content_en'],
+                    'url': article.get('url', ''),
+                    'section': section_name
+                }
+                flattened_articles.append(processed_article)
+        
+        return jsonify({
+            'articles': flattened_articles,
+            'currentDate': date
+        })
+        
+    except Exception as e:
+        logging.error(f"Error in get_wechat_newsletter: {str(e)}")
+        return jsonify({
+            'error': '获取新闻内容时发生错误，请稍后重试',
+            'articles': [],
+            'currentDate': date
+        }), 500
+
+########################
+# Subscription Routes  #
+########################
 
 @bp.route('/api/subscribe', methods=['POST'])
 def subscribe():
@@ -308,6 +379,34 @@ def confirm_subscription(token):
         return redirect(f"{frontend_url}/subscription/error")
     
     
+@bp.route('/api/unsubscribe/<subscriber_id>',methods=['GET'])
+def unsubscribe(subscriber_id):
+    try:
+        # 查找并更新订阅者状态
+        subscriber = Subscriber.objects(id=subscriber_id).first()
+        
+        if not subscriber:
+            return jsonify({'error': '未找到订阅者'}), 404
+            
+        # 如果已经取消订阅，直接重定向
+        if not subscriber.confirmed:
+            return redirect(f"{current_app.config['FRONTEND_URL']}/unsubscribed")
+            
+        # 删除订阅者
+        subscriber.delete()
+        
+        # 重定向到前端的取消订阅成功页面
+        return redirect(f"{current_app.config['FRONTEND_URL']}/unsubscribed")
+        
+    except Exception as e:
+        logging.error(f"Unsubscribe error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+    
+    
+########################
+# Email Service Routes #
+########################
+
 @bp.route('/api/test/send_newsletter', methods=['POST'])
 def test_send_newsletter():
     try:
@@ -342,30 +441,6 @@ def test_send_newsletter():
         
     except Exception as e:
         logging.error(f"Failed to send test newsletter: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-    
-    
-@bp.route('/api/unsubscribe/<subscriber_id>',methods=['GET'])
-def unsubscribe(subscriber_id):
-    try:
-        # 查找并更新订阅者状态
-        subscriber = Subscriber.objects(id=subscriber_id).first()
-        
-        if not subscriber:
-            return jsonify({'error': '未找到订阅者'}), 404
-            
-        # 如果已经取消订阅，直接重定向
-        if not subscriber.confirmed:
-            return redirect(f"{current_app.config['FRONTEND_URL']}/unsubscribed")
-            
-        # 删除订阅者
-        subscriber.delete()
-        
-        # 重定向到前端的取消订阅成功页面
-        return redirect(f"{current_app.config['FRONTEND_URL']}/unsubscribed")
-        
-    except Exception as e:
-        logging.error(f"Unsubscribe error: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
     

@@ -3,7 +3,7 @@
     <!-- Navbar -->
     <Navbar />
     <!-- Hero Section -->
-    <section class="bg-base-300 text-base-content py-24">
+    <section class="bg-base-300 text-base-content py-8">
       <div class="container mx-auto text-center px-4">
         <h1 class="text-5xl font-bold mb-6">
           <span class="text-6xl text-primary animate-pulse">{{

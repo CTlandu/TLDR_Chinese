@@ -27,6 +27,15 @@ const messages = {
     subscribe: '立即订阅',
     emailPlaceholder: '请输入您的邮箱地址',
     joinCommunity: '加入超过1,250,000读者的每日推送邮件',
+    latestNews: '最新科技资讯',
+    readMore: '阅读更多',
+    sections: {
+      'Big Tech & Startups': '科技公司动态',
+      'Programming, Design & Data Science': '编程/设计/数据科学',
+      'Science & Futuristic Technology': '未来科技',
+      Miscellaneous: '科技要闻',
+      'Quick Links': '速闻链接',
+    },
   },
 };
 

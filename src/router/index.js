@@ -18,12 +18,6 @@ const routes = [
     component: NewsletterView,
   },
   {
-    path: '/:pathMatch(.*)*',
-    name: 'not-found',
-    component: NotFound,
-  },
-  { path: '/', component: HomeView },
-  {
     path: '/subscription/success',
     name: 'SubscriptionSuccess',
     component: SubscriptionSuccess,
@@ -37,6 +31,11 @@ const routes = [
     path: '/unsubscribed',
     name: 'UnsubscribedView',
     component: UnsubscribedView,
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: NotFound,
   },
 ];
 

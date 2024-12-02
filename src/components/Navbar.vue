@@ -2,7 +2,7 @@
   <div class="navbar bg-base-200">
     <div class="flex-1">
       <router-link to="/" class="btn btn-ghost text-xl"
-        >TLDR每日科技新闻💻</router-link
+        >科技省流日报💻</router-link
       >
       <router-link :to="`/newsletter/${today}`" class="btn btn-ghost"
         >今日新闻</router-link
