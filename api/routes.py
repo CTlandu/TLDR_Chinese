@@ -13,7 +13,7 @@ import secrets
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import re
-from disposable_email_domains import blocklist
+import disposable_email_domains
 import requests
 
 bp = Blueprint('main', __name__)
@@ -316,7 +316,7 @@ limiter = Limiter(
 def is_disposable_email(email):
     try:
         domain = email.split('@')[1].lower()
-        return domain in blocklist
+        return domain in disposable_email_domains.emails
     except:
         return True
 
