@@ -1,11 +1,16 @@
 <template>
-  <div class="newsletter">
-    <nav class="navbar">
-      <ul>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <nav class="bg-base-200 rounded-lg shadow-md mb-8 p-4">
+      <ul class="flex flex-wrap gap-2 justify-center">
         <li v-for="date in dates" :key="date">
           <router-link
             :to="'/newsletter/' + date"
-            :class="{ active: date === currentDate }"
+            :class="[
+              'px-3 py-2 rounded-md text-sm sm:text-base transition-colors duration-200',
+              date === currentDate
+                ? 'bg-primary text-primary-content'
+                : 'text-base-content hover:bg-base-300',
+            ]"
           >
             {{ date }}
           </router-link>
@@ -13,12 +18,23 @@
       </ul>
     </nav>
 
-    <div class="content">
-      <h1>TLDR Newsletter - {{ currentDate }}</h1>
+    <div class="space-y-8">
+      <h1
+        class="text-2xl sm:text-3xl lg:text-4xl font-bold text-center text-base-content mb-8"
+      >
+        TLDR Newsletter - {{ currentDate }}
+      </h1>
 
-      <div v-for="section in articles" :key="section.section" class="section">
-        <h2>{{ section.section }}</h2>
-        <div v-html="section.content" class="section-content"></div>
+      <div v-for="section in articles" :key="section.section" class="space-y-4">
+        <h2
+          class="text-xl sm:text-2xl font-semibold text-base-content border-b border-base-300 pb-2"
+        >
+          {{ section.section }}
+        </h2>
+        <div
+          v-html="section.content"
+          class="prose prose-sm sm:prose lg:prose-lg max-w-none text-base-content"
+        ></div>
       </div>
     </div>
   </div>
@@ -26,7 +42,7 @@
 
 <script>
 export default {
-  name: "Newsletter",
+  name: 'Newsletter',
   props: {
     currentDate: {
       type: String,
@@ -45,69 +61,30 @@ export default {
 };
 </script>
 
-<style scoped>
-.newsletter {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+<style>
+.prose :deep(blockquote) {
+  @apply border-l-4 border-base-300 bg-base-200 my-4 px-4 py-2 text-base-content/80;
 }
 
-.navbar {
-  background: #f8f9fa;
-  padding: 1rem;
-  margin-bottom: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.prose :deep(a) {
+  @apply text-primary hover:text-primary-focus transition-colors duration-200;
 }
 
-.navbar ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
+.prose :deep(p) {
+  @apply text-base sm:text-lg leading-relaxed mb-4;
 }
 
-.navbar a {
-  padding: 0.5rem 1rem;
-  text-decoration: none;
-  color: #666;
-  border-radius: 4px;
+.prose :deep(img) {
+  @apply rounded-lg max-w-full h-auto mx-auto my-4;
 }
 
-.navbar a.active {
-  background: #0066cc;
-  color: white;
-}
+@media (max-width: 640px) {
+  .prose :deep(blockquote) {
+    @apply px-3 py-2 text-sm;
+  }
 
-h1 {
-  text-align: center;
-  color: #333;
-}
-
-h2 {
-  margin-top: 30px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #eee;
-  color: #444;
-}
-
-.section-content :deep(blockquote) {
-  border-left: 4px solid #ddd;
-  margin: 15px 0;
-  padding: 10px 20px;
-  color: #666;
-  background: #f9f9f9;
-}
-
-.section-content :deep(a) {
-  color: #0066cc;
-  text-decoration: none;
-}
-
-.section-content :deep(a:hover) {
-  text-decoration: underline;
+  .prose :deep(p) {
+    @apply text-sm leading-relaxed;
+  }
 }
 </style>

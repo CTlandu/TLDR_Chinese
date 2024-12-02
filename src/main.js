@@ -17,11 +17,13 @@ const messages = {
     latestNews: '最新科技资讯',
     readMore: '阅读更多',
     sections: {
-      'Big Tech & Startups': '科技公司动态',
-      'Programming, Design & Data Science': '编程/设计/数据科学',
-      'Science & Futuristic Technology': '未来科技',
-      Miscellaneous: '科技要闻',
-      'Quick Links': '速闻链接',
+      'Big Tech & Startups': '科技公司动态 🏢 Big Tech & Startups',
+      'Programming, Design & Data Science':
+        '编程/设计/数据科学 👨‍💻 Programming, Design & Data Science',
+      'Science & Futuristic Technology':
+        '未来科技 🔬 Science & Futuristic Technology',
+      Miscellaneous: '科技要闻 📌 Miscellaneous',
+      'Quick Links': '速闻链接 ⚡️ Quick Links',
     },
   },
 };

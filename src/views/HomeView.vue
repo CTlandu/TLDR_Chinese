@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Navbar -->
     <Navbar />
     <!-- 庆祝动画 -->
     <div
@@ -8,59 +7,70 @@
       class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
     >
       <div class="celebration-animation text-center">
-        <div class="text-6xl mb-2">🎉</div>
-        <div class="text-2xl font-bold text-primary">感谢订阅！</div>
+        <div class="text-4xl sm:text-6xl mb-2">🎉</div>
+        <div class="text-xl sm:text-2xl font-bold text-primary">感谢订阅！</div>
       </div>
     </div>
+
     <!-- Hero Section -->
-    <section class="bg-base-300 text-base-content py-8">
+    <section class="bg-base-300 text-base-content py-4 sm:py-8">
       <div class="container mx-auto text-center px-4">
-        <h1 class="text-5xl font-bold mb-6">
-          <span class="text-6xl text-primary animate-pulse">{{
-            $t('number')
-          }}</span>
+        <!-- 响应式标题 -->
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
+          <span
+            class="text-4xl sm:text-5xl lg:text-6xl text-primary animate-pulse"
+          >
+            {{ $t('number') }}
+          </span>
           {{ $t('welcomePrefix') }}
-          <span class="whitespace-nowrap">
+          <span class="whitespace-normal sm:whitespace-nowrap">
             {{ $t('welcomeSuffix') }}
-            <span class="text-4xl">💓</span>
-            <span class="text-4xl">💻</span>
+            <span class="text-2xl sm:text-4xl">💓</span>
+            <span class="text-2xl sm:text-4xl">💻</span>
           </span>
         </h1>
 
-        <p class="text-xl mb-12 max-w-2xl mx-auto">
+        <!-- 响应式描述文本 -->
+        <p class="text-base sm:text-xl mb-8 sm:mb-12 max-w-2xl mx-auto px-4">
           <span class="text-primary font-bold">{{ $t('free') }}</span>
           {{ $t('descriptionPrefix') }}
-          <br />
+          <br class="hidden sm:block" />
           {{ $t('descriptionSuffix') }}
         </p>
 
+        <!-- 订阅表单 -->
         <div
-          class="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-2xl mx-auto"
+          class="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-2xl mx-auto px-4"
         >
           <input
             v-model="email"
             type="email"
             :placeholder="$t('emailPlaceholder')"
             @keyup.enter="handleSubscribe"
-            class="input input-bordered input-lg w-full max-w-lg text-lg border-primary shadow-lg hover:shadow-primary/50 transition-all duration-300 animate-bounce-slow focus:animate-none"
+            class="input input-bordered input-lg w-full max-w-lg text-base sm:text-lg border-primary shadow-lg hover:shadow-primary/50 transition-all duration-300 animate-bounce-slow focus:animate-none"
             :class="{ 'input-error': error }"
           />
           <button
             @click="handleSubscribe"
             :disabled="loading"
-            class="btn btn-primary btn-lg text-lg min-w-[200px] hover:scale-105 transition-transform"
+            class="btn btn-primary btn-lg text-base sm:text-lg w-full sm:w-auto sm:min-w-[200px] hover:scale-105 transition-transform"
           >
             {{ loading ? '订阅中...' : $t('subscribe') }}
           </button>
         </div>
 
-        <div v-if="message" class="mt-4 text-center">
-          <div :class="error ? 'text-error' : 'text-success'">
+        <!-- 消息提示 -->
+        <div v-if="message" class="mt-4 text-center px-4">
+          <div
+            :class="error ? 'text-error' : 'text-success'"
+            class="text-sm sm:text-base"
+          >
             {{ message }}
           </div>
         </div>
 
-        <p class="mt-8 text-lg opacity-75">
+        <!-- 订阅者数量 -->
+        <p class="mt-6 sm:mt-8 text-base sm:text-lg opacity-75 px-4">
           加入超过
           <span
             class="font-bold text-primary transition-all duration-500"
@@ -73,7 +83,6 @@
       </div>
     </section>
 
-    <!-- Latest Articles Section -->
     <LatestArticles />
   </div>
 </template>
