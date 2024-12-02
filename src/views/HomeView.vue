@@ -123,41 +123,47 @@ export default {
       }
     },
     async handleSubscribe() {
-      // 基本的邮箱格式验证
-      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      if (!this.email || !emailRegex.test(this.email)) {
-        this.showMessage('请输入有效的邮箱地址', true);
-        return;
-      }
-
-      this.loading = true;
-      this.message = '';
-      this.error = false;
-
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        console.log('Using API URL:', API_URL);
+        // 基本的邮箱格式验证
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!this.email || !emailRegex.test(this.email)) {
+          this.showMessage('请输入有效的邮箱地址', true);
+          return;
+        }
 
-        const normalizedEmail = this.email.toLowerCase().trim();
+        this.loading = true;
+        this.message = '';
+        this.error = false;
 
-        const response = await axios.post(`${API_URL}/api/subscribe`, {
-          email: normalizedEmail,
-        });
+        try {
+          const API_URL =
+            import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const response = await axios.post(`${API_URL}/api/subscribe`, {
+            email: this.email.toLowerCase().trim(),
+          });
 
-        console.log('Response:', response.data);
-        this.showMessage(response.data.message);
-        this.email = ''; // 清空输入框
+          this.showMessage(response.data.message);
+          this.email = '';
 
-        // 显示庆祝动画
-        this.showCelebration = true;
-        setTimeout(() => {
-          this.showCelebration = false;
-        }, 2000);
+          // 显示庆祝动画
+          this.showCelebration = true;
+          setTimeout(() => {
+            this.showCelebration = false;
+          }, 2000);
 
-        // 更新并动画显示新的订阅者数量
-        await this.animateSubscriberCount();
+          // 更新并动画显示新的订阅者数量
+          await this.animateSubscriberCount();
+        } catch (error) {
+          console.error('Error:', error);
+          this.showMessage(
+            error.response?.data?.error || '订阅失败，请稍后重试',
+            true
+          );
+        } finally {
+          this.loading = false;
+        }
       } catch (error) {
-        console.error('Error details:', error);
+        console.error('Error:', error);
         this.showMessage(
           error.response?.data?.error || '订阅失败，请稍后重试',
           true
@@ -288,5 +294,11 @@ export default {
 .fixed {
   position: fixed;
   z-index: 9999;
+}
+
+.recaptcha-container {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: center;
 }
 </style>
