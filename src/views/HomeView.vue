@@ -2,6 +2,16 @@
   <div>
     <!-- Navbar -->
     <Navbar />
+    <!-- 庆祝动画 -->
+    <div
+      v-if="showCelebration"
+      class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+    >
+      <div class="celebration-animation text-center">
+        <div class="text-6xl mb-2">🎉</div>
+        <div class="text-2xl font-bold text-primary">感谢订阅！</div>
+      </div>
+    </div>
     <!-- Hero Section -->
     <section class="bg-base-300 text-base-content py-8">
       <div class="container mx-auto text-center px-4">
@@ -51,7 +61,14 @@
         </div>
 
         <p class="mt-8 text-lg opacity-75">
-          {{ $t('joinCommunity') }}
+          加入超过
+          <span
+            class="font-bold text-primary transition-all duration-500"
+            :class="{ 'animate-number': isCountAnimating }"
+          >
+            {{ formattedSubscriberCount }}
+          </span>
+          读者的每日推送邮件
         </p>
       </div>
     </section>
@@ -78,15 +95,38 @@ export default {
       loading: false,
       message: '',
       error: false,
+      subscriberCount: 5000, // 默认值
+      showCelebration: false,
+      isCountAnimating: false,
+      formattedSubscriberCount: '5,000',
     };
   },
+  computed: {
+    subscriberMessage() {
+      return `加入超过${this.subscriberCount.toLocaleString()}读者的每日推送邮件`;
+    },
+  },
+  async mounted() {
+    await this.fetchSubscriberCount();
+  },
   methods: {
-    changeLanguage(lang) {
-      this.$i18n.locale = lang;
+    async fetchSubscriberCount() {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const response = await axios.get(`${API_URL}/api/subscriber-count`);
+        if (response.data.success) {
+          this.subscriberCount = response.data.count;
+        }
+      } catch (error) {
+        console.error('Error fetching subscriber count:', error);
+        // 如果获取失败，保持默认值 5000
+      }
     },
     async handleSubscribe() {
-      if (!this.email) {
-        this.showMessage('请输入邮箱地址', true);
+      // 基本的邮箱格式验证
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!this.email || !emailRegex.test(this.email)) {
+        this.showMessage('请输入有效的邮箱地址', true);
         return;
       }
 
@@ -107,6 +147,15 @@ export default {
         console.log('Response:', response.data);
         this.showMessage(response.data.message);
         this.email = ''; // 清空输入框
+
+        // 显示庆祝动画
+        this.showCelebration = true;
+        setTimeout(() => {
+          this.showCelebration = false;
+        }, 2000);
+
+        // 更新并动画显示新的订阅者数量
+        await this.animateSubscriberCount();
       } catch (error) {
         console.error('Error details:', error);
         this.showMessage(
@@ -127,6 +176,48 @@ export default {
         this.message = '';
         this.error = false;
       }, 5000);
+    },
+
+    async animateSubscriberCount() {
+      const oldCount = this.subscriberCount;
+      const newCount = oldCount + 1;
+
+      // 开始动画
+      this.isCountAnimating = true;
+
+      // 使用 requestAnimationFrame 实现平滑计数动画
+      const startTime = performance.now();
+      const duration = 1000; // 1秒动画
+
+      const animate = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // 使用 easeOut 效果
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+        const currentCount = Math.floor(
+          oldCount + (newCount - oldCount) * easeProgress
+        );
+        this.formattedSubscriberCount = currentCount.toLocaleString();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          this.subscriberCount = newCount;
+          this.isCountAnimating = false;
+        }
+      };
+
+      requestAnimationFrame(animate);
+    },
+  },
+  watch: {
+    subscriberCount: {
+      immediate: true,
+      handler(newValue) {
+        this.formattedSubscriberCount = newValue.toLocaleString();
+      },
     },
   },
 };
@@ -151,5 +242,51 @@ export default {
   outline: none;
   border-color: theme('colors.primary');
   box-shadow: 0 0 0 2px theme('colors.primary' / 20%);
+}
+
+.celebration-animation {
+  animation: celebrate 2s ease-out forwards;
+}
+
+@keyframes celebrate {
+  0% {
+    transform: scale(0.5) translateY(100px);
+    opacity: 0;
+  }
+  20% {
+    transform: scale(1.2) translateY(0);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.1) translateY(-20px);
+    opacity: 0;
+  }
+}
+
+.animate-number {
+  animation: pulse 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+    color: theme('colors.primary');
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 确保动画元素在最上层 */
+.fixed {
+  position: fixed;
+  z-index: 9999;
 }
 </style>

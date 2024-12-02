@@ -5,18 +5,6 @@ import { createI18n } from 'vue-i18n';
 import './style.css';
 
 const messages = {
-  en: {
-    number: '5',
-    welcomePrefix: 'Minutes to Catch up With',
-    welcomeSuffix: 'Tech',
-    free: 'FREE',
-    descriptionPrefix: 'daily email subscription to stay updated.',
-    descriptionSuffix:
-      'Get the most interesting stories in startups, tech, and programming!',
-    subscribe: 'Subscribe Now',
-    emailPlaceholder: 'Enter your email address',
-    joinCommunity: 'Join 1,250,000+ readers for one daily email',
-  },
   zh: {
     number: '5',
     welcomePrefix: '分钟掌握',
@@ -26,7 +14,6 @@ const messages = {
     descriptionSuffix: '获取创业、科技和编程领域最有趣的新闻摘要！',
     subscribe: '立即订阅',
     emailPlaceholder: '请输入您的邮箱地址',
-    joinCommunity: '加入超过1,250,000读者的每日推送邮件',
     latestNews: '最新科技资讯',
     readMore: '阅读更多',
     sections: {
@@ -40,7 +27,7 @@ const messages = {
 };
 
 const i18n = createI18n({
-  locale: 'zh', // 默认语言
+  locale: 'zh',
   messages,
 });
 

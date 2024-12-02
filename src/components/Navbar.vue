@@ -11,14 +11,6 @@
       </router-link>
       <span class="text-base-content/60">广告投放</span>
     </div>
-    <div class="flex-none gap-2">
-      <button @click="changeLanguage('en')" class="btn btn-ghost btn-sm">
-        🇺🇸 English
-      </button>
-      <button @click="changeLanguage('zh')" class="btn btn-ghost btn-sm">
-        🇨🇳 中文
-      </button>
-    </div>
   </div>
 </template>
 
@@ -29,11 +21,6 @@ export default {
     today() {
       const date = new Date();
       return date.toISOString().split('T')[0];
-    },
-  },
-  methods: {
-    changeLanguage(lang) {
-      this.$i18n.locale = lang;
     },
   },
 };

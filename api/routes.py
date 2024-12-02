@@ -10,6 +10,10 @@ from flask import make_response
 from .services.mailgun_service import MailgunService
 from .models.subscriber import Subscriber
 import secrets
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import re
+from disposable_email_domains import blocklist
 
 bp = Blueprint('main', __name__)
 
@@ -299,14 +303,49 @@ def get_wechat_newsletter(date):
 # Subscription Routes  #
 ########################
 
+# 创建限流器
+limiter = Limiter(
+    app=None,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"  # 使用内存存储，也可以配置 redis
+)
+
+# 一次性邮箱域名检查函数
+def is_disposable_email(email):
+    try:
+        domain = email.split('@')[1].lower()
+        return domain in blocklist
+    except:
+        return True
+
+# 邮箱格式验证函数
+def is_valid_email(email):
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(pattern, email):
+        return False
+    # 检查域名部分是否包含至少一个点号
+    domain = email.split('@')[1]
+    return '.' in domain
+
 @bp.route('/api/subscribe', methods=['POST'])
+@limiter.limit("5 per hour")  # 每小时限制5次订阅请求
 def subscribe():
     try:
         data = request.get_json()
-        email = data.get('email', '').lower().strip()  # 转换为小写并去除空格
+        email = data.get('email', '').lower().strip()
         
+        # 基本验证
         if not email:
             return jsonify({'error': '请提供邮箱地址'}), 400
+            
+        # 格式验证
+        if not is_valid_email(email):
+            return jsonify({'error': '无效的邮箱格式'}), 400
+            
+        # 一次性邮箱检查
+        if is_disposable_email(email):
+            return jsonify({'error': '不支持一次性邮箱地址'}), 400
             
         # 检查邮箱是否已存在
         existing_subscriber = Subscriber.objects(email=email).first()
@@ -315,14 +354,13 @@ def subscribe():
             if existing_subscriber.confirmed:
                 return jsonify({'error': '该邮箱已订阅'}), 400
             else:
-                # 如果存在未确认的订阅，直接使用现有的 token 重新发送确认邮件
+                # 重新发送确认邮件的逻辑...
                 confirmation_link = url_for(
                     'main.confirm_subscription',
                     token=existing_subscriber.confirmation_token,
                     _external=True
                 )
                 
-                # 创建 Mailgun 服务实例并发送确认邮件
                 mailgun = MailgunService(
                     current_app.config['MAILGUN_API_KEY'],
                     current_app.config['MAILGUN_DOMAIN']
@@ -330,14 +368,28 @@ def subscribe():
                 
                 mailgun.send_confirmation_email(email, confirmation_link)
                 return jsonify({'message': '确认邮件已重新发送，请查收'})
-        else:
-            # 创建新订阅者
-            confirmation_token = secrets.token_urlsafe(32)
-            subscriber = Subscriber(
-                email=email,
-                confirmation_token=confirmation_token
-            )
-            subscriber.save()
+        
+        # 创建新订阅者
+        confirmation_token = secrets.token_urlsafe(32)
+        subscriber = Subscriber(
+            email=email,
+            confirmation_token=confirmation_token
+        )
+        subscriber.save()
+        
+        # 发送确认邮件...
+        confirmation_link = url_for(
+            'main.confirm_subscription',
+            token=confirmation_token,
+            _external=True
+        )
+        
+        mailgun = MailgunService(
+            current_app.config['MAILGUN_API_KEY'],
+            current_app.config['MAILGUN_DOMAIN']
+        )
+        
+        mailgun.send_confirmation_email(email, confirmation_link)
         
         return jsonify({
             'message': '确认邮件已发送，请查收并点击确认链接完成订阅'
@@ -494,6 +546,28 @@ def send_daily_newsletter_api():
     except Exception as e:
         logging.error(f"Failed to send daily newsletter: {str(e)}")
         return jsonify({'error': str(e)}), 500
+    
+########################
+# Miscellaneous Routes #
+@bp.route('/api/subscriber-count', methods=['GET'])
+def get_subscriber_count():
+    try:
+        # 获取已确认的订阅者数量
+        confirmed_subscribers_count = Subscriber.objects(confirmed=True).count()
+        base_count = 4738  # 基础数量
+        total_count = base_count + confirmed_subscribers_count
+        
+        return jsonify({
+            'count': total_count,
+            'success': True
+        })
+        
+    except Exception as e:
+        logging.error(f"Error getting subscriber count: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'success': False
+        }), 500
     
     
     

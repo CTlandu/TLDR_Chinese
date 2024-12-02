@@ -4,7 +4,15 @@ from flaskext.markdown import Markdown
 from config import Config
 import logging
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 db = MongoEngine()
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    storage_uri="memory://"
+)
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -48,6 +56,9 @@ def create_app(config_class=Config):
     except Exception as e:
         logging.error(f"Failed to connect to MongoDB: {str(e)}")
         raise
+    
+    # 初始化 Limiter
+    limiter.init_app(app)
     
     # 注册蓝图
     from .routes import bp
