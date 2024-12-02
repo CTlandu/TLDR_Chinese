@@ -18,9 +18,9 @@ class MailgunService:
                 f"{self.base_url}/messages",
                 auth=("api", self.api_key),
                 data={
-                    "from": f"TLDR科技日推 <confirm@{self.domain}>",
+                    "from": f"【太长不看】科技日推 <confirm@{self.domain}>",
                     "to": [to_email],
-                    "subject": "确认订阅 TLDR 科技日推",
+                    "subject": "确认订阅 【太长不看】 科技日推",
                     "html": self._get_confirmation_template(confirmation_link)
                 }
             )
@@ -42,7 +42,7 @@ class MailgunService:
                 f"{self.base_url}/messages",
                 auth=("api", self.api_key),
                 data={
-                    "from": f"TLDR科技日推 <newsletter@{self.domain}>",
+                    "from": f"【太长不看】科技日推 <newsletter@{self.domain}>",
                     "to": subscribers,
                     "subject": subject,
                     "html": content,
@@ -65,8 +65,8 @@ class MailgunService:
         """确认邮件的 HTML 模板"""
         return f"""
         <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2>确认订阅 TLDR 科技日推</h2>
-            <p>感谢您订阅 TLDR 每日科技新闻！</p>
+            <h2>确认订阅 【太长不看】 科技日推</h2>
+            <p>感谢您订阅 【太长不看】 每日科技新闻！</p>
             <p>请点击下面的按钮确认您的订阅：</p>
             <p style="text-align: center;">
                 <a href="{confirmation_link}" 
@@ -128,7 +128,7 @@ class MailgunService:
         <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <h1 style="color: #2c3e50; font-size: 24px; margin: 0; padding: 20px 0; border-bottom: 2px solid #eee;">
-                    TLDR Chinese 每日科技新闻
+                    【太长不看】科技日推
                 </h1>
                 <p style="color: #7f8c8d; margin-top: 10px;">
                     {newsletter_date}
