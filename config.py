@@ -15,12 +15,16 @@ else:
 class Config:
     DEEPL_API_KEY = os.environ.get('DEEPL_API_KEY')
     
-
+    # 设置 HTTPS 代理
+    if os.environ.get('HTTPS_PROXY'):
+        os.environ['PYMONGO_PROXY_URI'] = os.environ.get('HTTPS_PROXY')
+    
     MONGODB_SETTINGS = {
         'host': os.environ.get('MONGODB_URI'),
         'db': 'tldrchinese',
         'connect': False,
-        'authentication_source': 'admin'
+        'authentication_source': 'admin',
+        'serverSelectionTimeoutMS': 30000
     }
     
     MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY')
