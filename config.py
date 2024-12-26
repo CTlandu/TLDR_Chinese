@@ -29,6 +29,8 @@ class Config:
     BACKEND_URL = os.environ.get('BACKEND_URL')
     NEWSLETTER_API_KEY = os.environ.get('NEWSLETTER_API_KEY')
     
+    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+    
     def __init__(self):
         if not self.MONGODB_SETTINGS['host']:
             raise ValueError("MongoDB URI is not configured")
