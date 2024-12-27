@@ -72,7 +72,6 @@ def get_newsletter_by_date(date):
                 'sections': newsletter.sections,
                 'generated_title': newsletter.generated_title
             }
-            logging.info(f"API Response: {json.dumps(response_data, ensure_ascii=False)}")
             return jsonify(response_data)
             
         # 如果数据库中没有，尝试获取并保存
@@ -81,7 +80,7 @@ def get_newsletter_by_date(date):
             return jsonify({
                 'currentDate': date,
                 'sections': articles,
-                'generated_title': newsletter.generated_title
+                'generated_title': newsletter.generated_title if newsletter else "今日科技要闻速递"
             })
             
         return jsonify({'error': 'Newsletter not found'}), 404
