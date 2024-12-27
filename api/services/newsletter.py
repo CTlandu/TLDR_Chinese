@@ -17,7 +17,7 @@ def get_newsletter(date=None):
     """
     获取每日新闻简报
     :param date: 日期字符串，格式为 YYYY-MM-DD
-    :return: 新闻文章列表
+    :return: 包含 sections 和 generated_title 的字典
     """
     try:
         et = pytz.timezone('US/Eastern')
@@ -33,7 +33,7 @@ def get_newsletter(date=None):
         
         # 添加详细日志
         logging.info(f"请求日期: {date}")
-        logging.info(f"当前美东时间日��: {now_et.date()}")
+        logging.info(f"当前美东时间日期: {now_et.date()}")
         logging.info(f"转换为美东时间日期: {date_obj_et.date()}")
         
         # 检查是否是未来日期（相对于美东时间）
@@ -42,15 +42,21 @@ def get_newsletter(date=None):
             latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
             if latest_newsletter:
                 logging.info(f"Found latest newsletter from: {latest_newsletter.date}")
-                return latest_newsletter.sections
+                return {
+                    'sections': latest_newsletter.sections,
+                    'generated_title': latest_newsletter.generated_title
+                }
             logging.warning("数据库中没有简报")
-            return []
+            return None
             
         # 首先查找数据库中请求的日期（使用美东时间的日期）
         newsletter = DailyNewsletter.objects(date=date_obj_et.date()).first()
         if newsletter:
             logging.info(f"Found newsletter in database for {date} ET")
-            return newsletter.sections
+            return {
+                'sections': newsletter.sections,
+                'generated_title': newsletter.generated_title
+            }
             
         # 如果数据库中没有，尝试从源站获取
         logging.info(f"Newsletter not found in database, fetching from source for {date} ET")
@@ -78,13 +84,19 @@ def get_newsletter(date=None):
                 )
                 newsletter.save()
                 logging.info(f"Successfully saved newsletter with title to database for {date} ET")
-                return articles['sections']
+                return {
+                    'sections': articles['sections'],
+                    'generated_title': articles['generated_title']
+                }
                 
         except Exception as e:
             logging.error(f"Database save error: {str(e)}")
             if articles:
-                return articles['sections']
-            return []
+                return {
+                    'sections': articles['sections'],
+                    'generated_title': articles['generated_title']
+                }
+            return None
             
     except Exception as e:
         logging.error(f"Error in get_newsletter: {str(e)}")

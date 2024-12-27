@@ -191,16 +191,21 @@ def get_wechat_newsletter(date):
             return jsonify({
                 'error': f'未找到 {date} (美东时间) 的新闻内容，可能是无效日期或内容尚未发布',
                 'articles': [],
-                'currentDate': date
+                'currentDate': date,
+                'generated_title': "错误，没找到title"
             }), 404
         
-        # 需要排除的板
+        # 获取 sections 和 generated_title
+        sections = articles.get('sections', [])
+        generated_title = articles.get('generated_title', '今日新闻')
+        
+        # 需要排除的板块
         excluded_sections = ['Programming, Design & Data Science', 'Quick Links']
         
         # 创建扁平化的文章列表
         flattened_articles = []
         
-        for section in articles:
+        for section in sections:
             # 跳过不需要的板块
             if section['section'] in excluded_sections:
                 continue
@@ -227,7 +232,8 @@ def get_wechat_newsletter(date):
         
         return jsonify({
             'articles': flattened_articles,
-            'currentDate': date
+            'currentDate': date,
+            'generated_title': generated_title
         })
         
     except Exception as e:
@@ -235,7 +241,8 @@ def get_wechat_newsletter(date):
         return jsonify({
             'error': '获取新闻内容时发生错误，请稍后重试',
             'articles': [],
-            'currentDate': date
+            'currentDate': date,
+            'generated_title': '获取新闻失败'
         }), 500
 
 ########################
