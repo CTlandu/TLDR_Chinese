@@ -8,7 +8,7 @@ gunicorn==20.1.0
 
 # 核心依赖
 beautifulsoup4==4.9.3
-requests[socks]<2.31.0  # 降级到较早的版本，避免 SOCKS 问题
+requests==2.25.1  # 使用较老的稳定版本，不包含 SOCKS
 pytz==2021.1
 deepl==1.9.0
 python-dotenv==0.19.0
