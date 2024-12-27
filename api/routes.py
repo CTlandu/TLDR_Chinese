@@ -202,8 +202,9 @@ def get_wechat_newsletter(date):
         # 需要排除的板块
         excluded_sections = ['Programming, Design & Data Science', 'Quick Links']
         
-        # 创建扁平化的文章列表
+        # 创建扁平化的文章列表和 HTML 字符串
         flattened_articles = []
+        articles_html = []
         
         for section in sections:
             # 跳过不需要的板块
@@ -213,13 +214,12 @@ def get_wechat_newsletter(date):
             section_name = get_section_emoji(section['section'])
             
             for article in section['articles']:
-                # 清理中英文标题中的阅读时间
+                # 处理单篇文章
                 title_zh = clean_reading_time(article['title'])
                 title_en = clean_reading_time(article['title_en'])
+                # title_zh = get_title_emoji(title_zh)
                 
-                # 添加表情符号
-                title_zh = get_title_emoji(title_zh)
-                
+                # 添加到扁平化列表
                 processed_article = {
                     'title': title_zh,
                     'title_en': title_en,
@@ -229,11 +229,27 @@ def get_wechat_newsletter(date):
                     'section': section_name
                 }
                 flattened_articles.append(processed_article)
+                
+                # 创建 HTML 格式的文章
+                article_html = f'''<div style="margin-bottom:35px;">
+                    <p style="font-size:16px;font-weight:bold;color:#273469;margin-bottom:5px;text-decoration:underline;">{title_zh}</p>
+                    <p style="font-size:15px;color:#30343f;margin-bottom:15px;font-style:italic;">{title_en}</p>
+                    <p style="font-size:15px;color:#1e2749;line-height:1.6;margin-bottom:8px;">{article['content']}</p>
+                    <div style="background-color:#f8f8f8;padding:10px;margin-bottom:12px;">
+                        <p style="font-size:12px;color:#666;line-height:1.6;font-style:italic;">{article['content_en']}</p>
+                    </div>
+                    <p style="font-size:10px;color:#1e88e5;margin-bottom:20px;">{article.get('url', '')}</p>
+                </div>'''
+                articles_html.append(article_html)
+        
+        # 将所有 HTML 文章组合成一个字符串
+        articles_in_html = ''.join(articles_html)
         
         return jsonify({
             'articles': flattened_articles,
             'currentDate': date,
-            'generated_title': generated_title
+            'generated_title': generated_title,
+            'articles_in_html': articles_in_html
         })
         
     except Exception as e:
@@ -242,7 +258,8 @@ def get_wechat_newsletter(date):
             'error': '获取新闻内容时发生错误，请稍后重试',
             'articles': [],
             'currentDate': date,
-            'generated_title': '获取新闻失败'
+            'generated_title': '获取新闻失败',
+            'articles_in_html': ''
         }), 500
 
 ########################
@@ -386,7 +403,7 @@ def unsubscribe(subscriber_id):
         if not subscriber:
             return jsonify({'error': '未找到订阅者'}), 404
             
-        # 如果已经取消订���，直接重定向
+        # 如果已经取消订阅，直接重定向
         if not subscriber.confirmed:
             return redirect(f"{current_app.config['FRONTEND_URL']}/unsubscribed")
             
