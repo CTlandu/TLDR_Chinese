@@ -4,7 +4,9 @@
       <Navbar />
       <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <h1 class="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-8">
-          TLDR每日科技新闻【{{ currentDate }}】
+          {{ newsletter?.generated_title || '今日科技要闻速递' }}【{{
+            currentDate
+          }}】
         </h1>
 
         <div
@@ -99,6 +101,7 @@ export default {
       currentDate: '',
       articles: [],
       loading: false,
+      newsletter: null,
     };
   },
   methods: {
@@ -121,8 +124,9 @@ export default {
             },
           }
         );
-        this.articles = response.data.articles;
+        this.articles = response.data.sections;
         this.currentDate = response.data.currentDate;
+        this.newsletter = response.data;
       } catch (error) {
         console.error('Error details:', error);
         this.articles = [];

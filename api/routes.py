@@ -15,6 +15,7 @@ from flask_limiter.util import get_remote_address
 import re
 import disposable_email_domains
 import requests
+import json
 
 bp = Blueprint('main', __name__)
 
@@ -64,54 +65,30 @@ def get_available_dates(days=7):
 @bp.route('/api/newsletter/<date>')
 def get_newsletter_by_date(date):
     try:
-        articles = get_newsletter(date)
-        
-        if not articles:
-            return jsonify({
-                'articles': [],
-                'currentDate': date,
-                'dates': get_available_dates()
-            }), 200
-            
-        # 获取实际返回的文章日期
-        actual_date = date
-        if DailyNewsletter.objects(sections=articles).first():
-            actual_date = DailyNewsletter.objects(sections=articles).first().date.strftime('%Y-%m-%d')
-            
-        processed_articles = []
-        for section in articles:
-            if not isinstance(section, dict) or 'section' not in section:
-                continue
-                
-            processed_section = {
-                'section': get_section_emoji(section['section']),
-                'articles': []
+        newsletter = DailyNewsletter.objects(date=date).first()
+        if newsletter:
+            response_data = {
+                'currentDate': newsletter.date.strftime('%Y-%m-%d'),
+                'sections': newsletter.sections,
+                'generated_title': newsletter.generated_title
             }
+            logging.info(f"API Response: {json.dumps(response_data, ensure_ascii=False)}")
+            return jsonify(response_data)
             
-            if 'articles' in section and isinstance(section['articles'], list):
-                for article in section['articles']:
-                    if isinstance(article, dict):
-                        processed_article = article.copy()
-                        if 'title' in processed_article:
-                            processed_article['title'] = get_title_emoji(article['title'])
-                        processed_section['articles'].append(processed_article)
+        # 如果数据库中没有，尝试获取并保存
+        articles = get_newsletter(date)
+        if articles:
+            return jsonify({
+                'currentDate': date,
+                'sections': articles,
+                'generated_title': newsletter.generated_title
+            })
             
-            processed_articles.append(processed_section)
+        return jsonify({'error': 'Newsletter not found'}), 404
         
-        return jsonify({
-            'articles': processed_articles,
-            'currentDate': actual_date,  # 返回实际的日期
-            'dates': get_available_dates()
-        })
-            
     except Exception as e:
-        logging.error(f"Error processing request: {str(e)}")
-        return jsonify({
-            'error': '暂时无法获取新闻内容，请稍后再试',
-            'articles': [],
-            'currentDate': date,
-            'dates': get_available_dates()
-        }), 200
+        logging.error(f"Error getting newsletter: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/latest-articles')
 def get_latest_articles():
@@ -146,7 +123,8 @@ def get_latest_articles():
                 try:
                     new_newsletter = DailyNewsletter(
                         date=current_date,
-                        sections=today_articles
+                        sections=today_articles['sections'],
+                        generated_title=today_articles['generated_title']
                     )
                     new_newsletter.save()
                     latest_newsletter = new_newsletter
@@ -174,10 +152,14 @@ def get_latest_articles():
                 flattened_articles.append(processed_article)
         
         logging.info(f"Returning {len(flattened_articles)} articles for date {latest_date}")
-        return jsonify(flattened_articles)
+        return jsonify({
+            'currentDate': latest_date,
+            'sections': latest_newsletter.sections,
+            'generated_title': latest_newsletter.generated_title
+        })
         
     except Exception as e:
-        logging.error(f"Error in get_latest_articles: {str(e)}")
+        logging.error(f"Error getting latest articles: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/latest-articles-by-section')
@@ -393,7 +375,7 @@ def subscribe():
         mailgun.send_confirmation_email(email, confirmation_link)
         
         return jsonify({
-            'message': '确认邮件已发送，请查收并点击确认链接完成订阅'
+            'message': '确认邮件已发送，请查收并点击确认链接���成订阅'
         })
         
     except Exception as e:

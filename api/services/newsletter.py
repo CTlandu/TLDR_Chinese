@@ -10,6 +10,8 @@ from flask import current_app
 from ..models.article import DailyNewsletter
 import logging
 import json
+import os
+from ..services.title_generator import TitleGeneratorService
 
 def get_newsletter(date=None):
     """
@@ -64,17 +66,21 @@ def get_newsletter(date=None):
             
         # 如果获取到了内容，保存到数据库（使用美东时间的日期）
         try:
-            newsletter = DailyNewsletter(
-                date=date_obj_et.date(),
-                sections=articles
-            )
-            newsletter.save()
-            logging.info(f"Successfully saved newsletter to database for {date} ET")
-            return articles
-            
+            if articles:
+                newsletter = DailyNewsletter(
+                    date=date_obj_et.date(),
+                    sections=articles['sections'],
+                    generated_title=articles['generated_title']  # 保存生成的标题
+                )
+                newsletter.save()
+                logging.info(f"Successfully saved newsletter with title to database for {date} ET")
+                return articles['sections']
+                
         except Exception as e:
             logging.error(f"Database save error: {str(e)}")
-            return articles
+            if articles:
+                return articles['sections']
+            return []
             
     except Exception as e:
         logging.error(f"Error in get_newsletter: {str(e)}")
@@ -161,7 +167,30 @@ def fetch_tldr_content(date):
             logging.warning("No valid articles found")
             return None
             
-        return articles
+        try:
+            # 在所有文章处理完成后，生成标题
+            if articles:
+                # 初始化标题生成器
+                title_generator = TitleGeneratorService(
+                    os.environ.get('ERNIE_API_KEY'),
+                    os.environ.get('ERNIE_SECRET_KEY')
+                )
+                
+                # 生成标题
+                generated_title = title_generator.generate_title(articles)
+                logging.info(f"生成的标题: {generated_title}")
+                
+                # 返回带有标题的文章数据
+                return {
+                    'sections': articles,
+                    'generated_title': generated_title
+                }
+                
+            return None
+            
+        except Exception as e:
+            logging.error(f"Error fetching content: {str(e)}")
+            return None
         
     except requests.RequestException as e:
         logging.error(f"Request error: {str(e)}")

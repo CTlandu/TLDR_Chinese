@@ -5,8 +5,8 @@ class DailyNewsletter(db.Document):
     # date = db.DateTimeField(required=True, unique=True)
     date = db.DateField(required=True, unique=True)  # 只存储日期，不存储时间
     sections = db.ListField(db.DictField())
-    title = db.StringField(default="<太长不看>今日科技要闻速递 🚀")
     created_at = db.DateTimeField(default=datetime.utcnow)
+    generated_title = db.StringField()
     
     meta = {
         'collection': 'newsletters',
