@@ -4,8 +4,7 @@ import logging
 import dns.resolver
 from pymongo import MongoClient
 from api import create_app
-from config import DevelopmentConfig, ProductionConfig
-import logging
+from config import get_config
 
 # 设置日志
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +16,7 @@ def setup_mongodb_dns():
     resolver.nameservers = ['8.8.8.8', '8.8.4.4']
     dns.resolver.default_resolver = resolver
 
-def get_config():
+def get_app_config():
     env = os.environ.get('FLASK_ENV', 'development')
     logger.info(f"Running in {env} environment")
     logger.info(f"Current working directory: {os.getcwd()}")
@@ -26,11 +25,7 @@ def get_config():
     setup_mongodb_dns()
     
     try:
-        if env == 'development':
-            config = DevelopmentConfig()
-           
-        else:
-            config = ProductionConfig()
+        config = get_config()
         
         # 验证配置
         logger.info(f"MongoDB URI: {config.MONGODB_SETTINGS['host']}")
@@ -53,7 +48,7 @@ def get_config():
         raise
 
 try:
-    config = get_config()
+    config = get_app_config()
     app = create_app(config)
 except Exception as e:
     logger.error(f"Failed to create app: {str(e)}")
