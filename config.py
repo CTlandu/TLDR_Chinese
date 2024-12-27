@@ -40,6 +40,18 @@ class Config:
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
     
     def __init__(self):
+        # 确保在初始化时重新获取环境变量
+        self.MONGODB_SETTINGS = {
+            'host': os.environ.get('MONGODB_URI'),
+            'db': 'tldrchinese',
+            'connect': False,
+            'authentication_source': 'admin',
+            'serverSelectionTimeoutMS': 30000,
+            'ssl': True,
+            'tlsInsecure': True
+        }
+        
+        # 如果没有 MongoDB URI，抛出错误
         if not self.MONGODB_SETTINGS['host']:
             raise ValueError("MongoDB URI is not configured")
 
