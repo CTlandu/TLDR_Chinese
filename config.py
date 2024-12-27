@@ -35,11 +35,13 @@ class DevelopmentConfig(BaseConfig):
     
     def __init__(self):
         super().__init__()
-        # 只在开发环境中设置代理
-        if os.environ.get('HTTPS_PROXY'):
-            self.HTTPS_PROXY = os.environ.get('HTTPS_PROXY')
-            os.environ['PYMONGO_PROXY_URI'] = self.HTTPS_PROXY
-            
+        # 只在开发环境中设置代理，且仅当 USE_PROXY 为 true 时
+        if os.environ.get('USE_PROXY', 'false').lower() == 'true':
+            proxy = os.environ.get('HTTPS_PROXY')
+            if proxy:
+                self.HTTPS_PROXY = proxy
+                os.environ['PYMONGO_PROXY_URI'] = proxy
+                
 class ProductionConfig(BaseConfig):
     DEBUG = False  # 生产环境关闭调试模式
     
