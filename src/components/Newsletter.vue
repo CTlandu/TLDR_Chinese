@@ -22,7 +22,7 @@
       <h1
         class="text-2xl sm:text-3xl lg:text-4xl font-bold text-center text-base-content mb-8"
       >
-        TLDR Newsletter - {{ currentDate }}
+        {{ generated_title }} 【{{ currentDate }}】
       </h1>
 
       <div v-for="section in articles" :key="section.section" class="space-y-4">
@@ -56,6 +56,15 @@ export default {
       type: Array,
       required: true,
       default: () => [],
+    },
+  },
+  watch: {
+    // 监听 currentDate 的变化
+    currentDate(newDate) {
+      // 如果返回的日期与 URL 中的日期不同，更新路由
+      if (newDate !== this.$route.params.date) {
+        this.$router.replace(`/newsletter/${newDate}`);
+      }
     },
   },
 };

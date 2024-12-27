@@ -65,6 +65,7 @@ def get_available_dates(days=7):
 @bp.route('/api/newsletter/<date>')
 def get_newsletter_by_date(date):
     try:
+        # 先查询指定日期
         newsletter = DailyNewsletter.objects(date=date).first()
         if newsletter:
             response_data = {
@@ -76,14 +77,25 @@ def get_newsletter_by_date(date):
             
         # 如果数据库中没有，尝试获取并保存
         articles = get_newsletter(date)
-        if articles:
+        if articles and isinstance(articles, dict) and 'sections' in articles:
+            # 使用最新 newsletter 的所有信息
             return jsonify({
-                'currentDate': date,
-                'sections': articles,
-                'generated_title': newsletter.generated_title if newsletter else "今日科技要闻速递"
+                'currentDate': articles.get('date', date),
+                'sections': articles['sections'],
+                'generated_title': articles['generated_title']
             })
             
-        return jsonify({'error': 'Newsletter not found'}), 404
+        # 如果还是找不到，返回最新的 newsletter
+        latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
+        if latest_newsletter:
+            return jsonify({
+                'currentDate': latest_newsletter.date.strftime('%Y-%m-%d'),
+                'sections': latest_newsletter.sections,
+                'generated_title': latest_newsletter.generated_title
+            })
+            
+        # 只有在完全没有数据的情况下才返回 404
+        return jsonify({'error': 'No newsletter available'}), 404
         
     except Exception as e:
         logging.error(f"Error getting newsletter: {str(e)}")
@@ -92,70 +104,15 @@ def get_newsletter_by_date(date):
 @bp.route('/api/latest-articles')
 def get_latest_articles():
     try:
-        # 获取当前时间（美东时间）
-        et = pytz.timezone('US/Eastern')
-        current_date = datetime.now(et)
-        logging.info(f"Current ET date: {current_date}")
-
-        # 获取所有可用的newsletter，按日期降序排列
-        all_newsletters = DailyNewsletter.objects().order_by('-date')
-        logging.info(f"Total newsletters in database: {all_newsletters.count()}")
+        # 获取数据库中最新的 newsletter 日期
+        latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
         
-        # 获取最新的newsletter
-        latest_newsletter = all_newsletters.first()
         if not latest_newsletter:
-            logging.warning("No newsletters found in database")
-            return jsonify([])
-        
-        latest_date = latest_newsletter.date.strftime('%Y-%m-%d')
-        logging.info(f"Latest newsletter date: {latest_date}")
-        
-        # 检查是否有更新的内容
-        today_date = current_date.strftime('%Y-%m-%d')
-        if latest_date != today_date:
-            logging.info(f"Checking for newer content for {today_date}")
-            # 尝试获取今天的内容
-            today_articles = fetch_tldr_content(today_date)
-            if today_articles:
-                logging.info("Found newer content, using it instead")
-                # 如果找到了今天的内容，保存并使用它
-                try:
-                    new_newsletter = DailyNewsletter(
-                        date=current_date,
-                        sections=today_articles['sections'],
-                        generated_title=today_articles['generated_title']
-                    )
-                    new_newsletter.save()
-                    latest_newsletter = new_newsletter
-                    latest_date = today_date
-                except Exception as e:
-                    logging.error(f"Error saving new newsletter: {str(e)}")
-        
-        # 处理文章数据
-        flattened_articles = []
-        for section in latest_newsletter.sections:
-            processed_section = get_section_emoji(section['section'])
-            logging.info(f"Processing section: {section['section']}")
+            return jsonify({'error': '没有找到可用的 newsletter'}), 404
             
-            for article in section['articles']:
-                processed_article = {
-                    'title': get_title_emoji(clean_reading_time(article['title'])),
-                    'title_en': clean_reading_time(article['title_en']),
-                    'content': article['content'],
-                    'content_en': article['content_en'],
-                    'url': article['url'],
-                    'image_url': article.get('image_url'),
-                    'section': processed_section,
-                    'date': latest_date
-                }
-                flattened_articles.append(processed_article)
-        
-        logging.info(f"Returning {len(flattened_articles)} articles for date {latest_date}")
-        return jsonify({
-            'currentDate': latest_date,
-            'sections': latest_newsletter.sections,
-            'generated_title': latest_newsletter.generated_title
-        })
+        # 使用最新日期调用 get_newsletter_by_date
+        latest_date = latest_newsletter.date.strftime('%Y-%m-%d')
+        return get_newsletter_by_date(latest_date)
         
     except Exception as e:
         logging.error(f"Error getting latest articles: {str(e)}")
@@ -374,7 +331,7 @@ def subscribe():
         mailgun.send_confirmation_email(email, confirmation_link)
         
         return jsonify({
-            'message': '确认邮件已发送，请查收并点击确认链接���成订阅'
+            'message': '确认邮件已发送，请查收并点击确认链接完成订阅'
         })
         
     except Exception as e:
@@ -422,7 +379,7 @@ def unsubscribe(subscriber_id):
         if not subscriber:
             return jsonify({'error': '未找到订阅者'}), 404
             
-        # 如果已经取消订阅，直接重定向
+        # 如果已经取消订���，直接重定向
         if not subscriber.confirmed:
             return redirect(f"{current_app.config['FRONTEND_URL']}/unsubscribed")
             

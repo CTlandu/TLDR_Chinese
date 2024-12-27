@@ -33,7 +33,7 @@ def get_newsletter(date=None):
         
         # 添加详细日志
         logging.info(f"请求日期: {date}")
-        logging.info(f"当前美东时间日期: {now_et.date()}")
+        logging.info(f"当前美东时间日��: {now_et.date()}")
         logging.info(f"转换为美东时间日期: {date_obj_et.date()}")
         
         # 检查是否是未来日期（相对于美东时间）
@@ -61,8 +61,12 @@ def get_newsletter(date=None):
             latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
             if latest_newsletter:
                 logging.info(f"Returning latest available newsletter from: {latest_newsletter.date}")
-                return latest_newsletter.sections
-            return []
+                # 返回完整的信息，包括 sections 和 generated_title
+                return {
+                    'sections': latest_newsletter.sections,
+                    'generated_title': latest_newsletter.generated_title
+                }
+            return None
             
         # 如果获取到了内容，保存到数据库（使用美东时间的日期）
         try:
@@ -84,7 +88,7 @@ def get_newsletter(date=None):
             
     except Exception as e:
         logging.error(f"Error in get_newsletter: {str(e)}")
-        return []
+        return None
 
 def fetch_tldr_content(date):
     url = f"https://tldr.tech/tech/{date}"
