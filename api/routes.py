@@ -231,15 +231,7 @@ def get_wechat_newsletter(date):
                 flattened_articles.append(processed_article)
                 
                 # 创建 HTML 格式的文章
-                article_html = f'''<div style="margin-bottom:35px;">
-                    <p style="font-size:16px;font-weight:bold;color:#273469;margin-bottom:5px;text-decoration:underline;">{title_zh}</p>
-                    <p style="font-size:15px;color:#30343f;margin-bottom:15px;font-style:italic;">{title_en}</p>
-                    <p style="font-size:15px;color:#1e2749;line-height:1.6;margin-bottom:8px;">{article['content']}</p>
-                    <div style="background-color:#f8f8f8;padding:10px;margin-bottom:12px;">
-                        <p style="font-size:12px;color:#666;line-height:1.6;font-style:italic;">{article['content_en']}</p>
-                    </div>
-                    <p style="font-size:10px;color:#1e88e5;margin-bottom:20px;">{article.get('url', '')}</p>
-                </div>'''
+                article_html = f'''<div style="margin-bottom:35px;"><p style="font-size:16px;font-weight:bold;color:#273469;margin-bottom:5px;text-decoration:underline;">{title_zh}</p><p style="font-size:15px;color:#30343f;margin-bottom:15px;font-style:italic;">{title_en}</p><p style="font-size:15px;color:#1e2749;line-height:1.6;margin-bottom:8px;">{article['content']}</p><div style="background-color:#f8f8f8;padding:10px;margin-bottom:12px;"><p style="font-size:12px;color:#666;line-height:1.6;font-style:italic;">{article['content_en']}</p></div><p style="font-size:10px;color:#1e88e5;margin-bottom:20px;">{article.get('url', '')}</p></div>'''
                 articles_html.append(article_html)
         
         # 将所有 HTML 文章组合成一个字符串
