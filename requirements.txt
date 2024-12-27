@@ -6,13 +6,9 @@ flask-mongoengine==1.0.0
 flask-markdown
 gunicorn==20.1.0
 
-# SOCKS 支持
-PySocks>=1.7.1
-python-socks>=2.0.0
-
-# 其他依赖
+# 核心依赖
 beautifulsoup4==4.9.3
-requests==2.31.0
+requests[socks]<2.31.0  # 降级到较早的版本，避免 SOCKS 问题
 pytz==2021.1
 deepl==1.9.0
 python-dotenv==0.19.0
