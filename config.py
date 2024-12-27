@@ -16,10 +16,10 @@ else:
 class Config:
     DEEPL_API_KEY = os.environ.get('DEEPL_API_KEY')
     
-    # 设置 HTTPS 代理
-    if os.environ.get('HTTPS_PROXY'):
-        proxy = os.environ.get('HTTPS_PROXY')
-        os.environ['PYMONGO_PROXY_URI'] = proxy
+    # 注释掉或删除代理设置
+    # if os.environ.get('HTTPS_PROXY'):
+    #     proxy = os.environ.get('HTTPS_PROXY')
+    #     os.environ['PYMONGO_PROXY_URI'] = proxy
     
     MONGODB_SETTINGS = {
         'host': os.environ.get('MONGODB_URI'),
@@ -28,7 +28,7 @@ class Config:
         'authentication_source': 'admin',
         'serverSelectionTimeoutMS': 30000,
         'ssl': True,
-        'tlsInsecure': True  # 在开发环境使用
+        'tlsInsecure': True
     }
     
     MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY')
