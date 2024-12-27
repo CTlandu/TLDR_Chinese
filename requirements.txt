@@ -6,20 +6,18 @@ flask-mongoengine==1.0.0
 flask-markdown
 gunicorn==20.1.0
 
-# 数据处理
-beautifulsoup4==4.9.3
-pytz==2021.1
-python-dotenv==0.19.0
+# SOCKS 支持
+PySocks>=1.7.1
+python-socks>=2.0.0
 
-# API 服务
+# 其他依赖
+beautifulsoup4==4.9.3
+requests==2.31.0
+pytz==2021.1
 deepl==1.9.0
+python-dotenv==0.19.0
 Flask-Limiter>=3.9.0,<4.0.0
 disposable-email-domains==0.0.19
 tenacity==8.2.3
-
-# 数据库
 dnspython==2.4.2
 mongoengine==0.24.2
-
-# 网络请求 - 只保留最基础的包
-requests>=2.25.0,<3.0.0
