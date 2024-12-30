@@ -207,31 +207,20 @@ def get_wechat_newsletter(date):
         # 创建扁平化的文章列表和 HTML 字符串
         flattened_articles = []
         articles_html = []
-        first_image_data = None  # 存储第一张图片的数据
+        first_image_url = None  # 存储第一张图片的URL
         
-        # 寻找第一张图片并下载
-        found_first_image = False
+        # 寻找第一张图片URL
         for section in sections:
-            if found_first_image:
+            if first_image_url:
                 break
                 
             if section['section'] in excluded_sections:
                 continue
                 
             for article in section['articles']:
-                if article.get('image_url') and not found_first_image:
-                    try:
-                        # 下载第一张图片
-                        response = requests.get(article['image_url'])
-                        if response.status_code == 200:
-                            # 将图片转换为base64编码
-                            image_base64 = base64.b64encode(response.content).decode('utf-8')
-                            first_image_data = f"data:image/jpeg;base64,{image_base64}"
-                            found_first_image = True
-                            break
-                    except Exception as e:
-                        logging.error(f"Error downloading image: {str(e)}")
-                        continue
+                if article.get('image_url'):
+                    first_image_url = article['image_url']
+                    break
         
         # 处理文章内容
         for section in sections:
@@ -274,7 +263,7 @@ def get_wechat_newsletter(date):
             'currentDate': date,
             'generated_title': generated_title,
             'articles_in_html': articles_in_html,
-            'first_image': first_image_data  # 返回第一张图片的base64数据
+            'first_image_url': first_image_url  # 返回第一张图片的URL
         })
         
     except Exception as e:
@@ -285,7 +274,7 @@ def get_wechat_newsletter(date):
             'currentDate': date,
             'generated_title': '获取新闻失败',
             'articles_in_html': '',
-            'first_image': None
+            'first_image_url': None
         }), 500
 
 ########################
