@@ -16,6 +16,8 @@ import re
 import disposable_email_domains
 import requests
 import json
+from io import BytesIO
+import base64
 
 bp = Blueprint('main', __name__)
 
@@ -202,13 +204,37 @@ def get_wechat_newsletter(date):
         # 需要排除的板块
         excluded_sections = ['Programming, Design & Data Science', 'Quick Links']
         
-        # 创建扁平化的文章列表、HTML 字符串和图片 URL 列表
+        # 创建扁平化的文章列表和 HTML 字符串
         flattened_articles = []
         articles_html = []
-        image_urls = []  # 新增图片URL列表
+        first_image_data = None  # 存储第一张图片的数据
         
+        # 寻找第一张图片并下载
+        found_first_image = False
         for section in sections:
-            # 跳过不需要的板块
+            if found_first_image:
+                break
+                
+            if section['section'] in excluded_sections:
+                continue
+                
+            for article in section['articles']:
+                if article.get('image_url') and not found_first_image:
+                    try:
+                        # 下载第一张图片
+                        response = requests.get(article['image_url'])
+                        if response.status_code == 200:
+                            # 将图片转换为base64编码
+                            image_base64 = base64.b64encode(response.content).decode('utf-8')
+                            first_image_data = f"data:image/jpeg;base64,{image_base64}"
+                            found_first_image = True
+                            break
+                    except Exception as e:
+                        logging.error(f"Error downloading image: {str(e)}")
+                        continue
+        
+        # 处理文章内容
+        for section in sections:
             if section['section'] in excluded_sections:
                 continue
                 
@@ -218,21 +244,16 @@ def get_wechat_newsletter(date):
                 # 处理单篇文章
                 title_zh = clean_reading_time(article['title'])
                 title_en = clean_reading_time(article['title_en'])
-                # title_zh = get_title_emoji(title_zh)
+                title_zh = get_title_emoji(title_zh)
                 
-                # 如果文章有图片URL，添加到列表中
-                if article.get('image_url'):
-                    image_urls.append(article['image_url'])
-                
-                # 添加到扁平化列表
                 processed_article = {
                     'title': title_zh,
-                    'title_en': title_en,
+                    'title_en': clean_reading_time(article['title_en']),
                     'content': article['content'],
                     'content_en': article['content_en'],
                     'url': article.get('url', ''),
                     'section': section_name,
-                    'image_url': article.get('image_url', '')  # 确保在文章对象中也包含图片URL
+                    'image_url': article.get('image_url', '')
                 }
                 flattened_articles.append(processed_article)
                 
@@ -253,18 +274,18 @@ def get_wechat_newsletter(date):
             'currentDate': date,
             'generated_title': generated_title,
             'articles_in_html': articles_in_html,
-            'image_urls': image_urls  # 新增返回图片URL列表
+            'first_image': first_image_data  # 返回第一张图片的base64数据
         })
         
     except Exception as e:
         logging.error(f"Error in get_wechat_newsletter: {str(e)}")
         return jsonify({
             'error': '获取新闻内容时发生错误，请稍后重试',
-            'articles': [],
+            'articles': flattened_articles,
             'currentDate': date,
             'generated_title': '获取新闻失败',
             'articles_in_html': '',
-            'image_urls': []  # 错误情况下返回空列表
+            'first_image': None
         }), 500
 
 ########################
