@@ -12,7 +12,6 @@ pytz==2021.1
 python-dotenv==0.19.0
 
 # API 服务
-deepl==1.9.0
 Flask-Limiter>=3.9.0,<4.0.0
 disposable-email-domains==0.0.19
 tenacity==8.2.3

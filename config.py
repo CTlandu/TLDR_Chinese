@@ -11,7 +11,7 @@ else:
     load_dotenv()
 
 class BaseConfig:
-    DEEPL_API_KEY = os.environ.get('DEEPL_API_KEY')
+    DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY')
     DEBUG = False  # 默认关闭调试模式
     MONGODB_SETTINGS = {
         'host': os.environ.get('MONGODB_URI'),

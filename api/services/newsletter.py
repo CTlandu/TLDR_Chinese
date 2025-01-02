@@ -143,7 +143,7 @@ def fetch_tldr_content(date):
                         continue
                         
                     title = title_elem.text.strip()
-                    translator = TranslatorService(current_app.config['DEEPL_API_KEY'])
+                    translator = TranslatorService(current_app.config['DEEPSEEK_API_KEY'])
                     
                     content = article.find('div', class_='newsletter-html')
                     content_html = ''.join(str(tag) for tag in content.contents) if content else ""

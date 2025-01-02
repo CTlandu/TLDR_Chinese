@@ -32,7 +32,7 @@ A Chinese translation of TLDR Tech daily newsletter, helping Chinese readers sta
 
 Source: [TLDR.tech](https://tldr.tech)
 
-Translation powered by [DeepL API](https://www.deepl.com/)
+Translation powered by [DeepSeek API](https://www.deepseek.com/)
 
   <table>
     <tr>
@@ -90,7 +90,7 @@ Translation powered by [DeepL API](https://www.deepl.com/)
 ![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
 
-- DeepL API 翻译服务 / Translation Service
+- DeepSeek API 翻译服务 / Translation Service
 - BeautifulSoup4 网页解析 / Web Scraping
 
 ## 📝 开源协议 License
