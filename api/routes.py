@@ -545,8 +545,8 @@ def send_daily_newsletter_api():
         if not subscriber_emails:
             return jsonify({'message': '没有已确认的订阅者'}), 200
             
-        # 准备邮件内容
-        subject = f"TLDR Chinese 每日科技新闻 【{latest_newsletter.date.strftime('%Y-%m-%d')}】"
+        # 准备邮件内容，使用数据库中的 generated_title
+        subject = f"[{latest_newsletter.generated_title}] {latest_newsletter.date.strftime('%Y-%m-%d')}"
         
         # 创建 Mailgun 服务实例
         mailgun = MailgunService(

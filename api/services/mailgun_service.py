@@ -42,7 +42,7 @@ class MailgunService:
                 f"{self.base_url}/messages",
                 auth=("api", self.api_key),
                 data={
-                    "from": f"【太长不看】科技日推 <newsletter@{self.domain}>",
+                    "from": f"太长不看 | 科技日推 <newsletter@{self.domain}>",
                     "to": subscribers,
                     "subject": subject,
                     "html": content,
@@ -123,12 +123,13 @@ class MailgunService:
     def generate_newsletter_html(self, newsletter) -> str:
         """生成邮件的 HTML 内容"""
         newsletter_date = newsletter.date.strftime('%Y-%m-%d')
+        newsletter_title = newsletter.generated_title
         
         html = f"""
         <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <h1 style="color: #2c3e50; font-size: 24px; margin: 0; padding: 20px 0; border-bottom: 2px solid #eee;">
-                    【太长不看】科技日推
+                    {newsletter_title}
                 </h1>
                 <p style="color: #7f8c8d; margin-top: 10px;">
                     {newsletter_date}
