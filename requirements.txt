@@ -1,4 +1,4 @@
-# 基础 Web 框架
+# Web Framework
 flask==2.0.1
 werkzeug==2.0.3
 flask-cors==3.0.10
@@ -6,20 +6,23 @@ flask-mongoengine==1.0.0
 flask-markdown
 gunicorn==20.1.0
 
-# 数据处理
+# Data Processing
 beautifulsoup4==4.9.3
 pytz==2021.1
 python-dotenv==0.19.0
 
-# API 服务
+# API Services
 Flask-Limiter>=3.9.0,<4.0.0
 disposable-email-domains==0.0.19
 tenacity==8.2.3
+openai>=1.0.0
+httpx[socks]
+PySocks>=1.7.1
 
-# MongoDB 相关 - 固定版本以确保兼容性
+# MongoDB Related
 pymongo==3.12.3
 mongoengine==0.24.2
 dnspython==2.4.2
 
-# 其他依赖
+# Other Dependencies
 requests==2.31.0
