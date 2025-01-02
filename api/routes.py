@@ -289,12 +289,62 @@ limiter = Limiter(
     storage_uri="memory://"  # 使用内存存储，也可以配置 redis
 )
 
+# 常用邮箱域名后缀白名单
+VALID_EMAIL_SUFFIXES = {
+    # 教育机构
+    '.edu.cn',    # 中国教育机构
+    '.edu.hk',    # 香港教育机构
+    '.edu.tw',    # 台湾教育机构
+    '.edu',       # 国际教育机构
+    
+    # 政府机构
+    '.gov.cn',    # 中国政府机构
+    '.gov',       # 国际政府机构
+    
+    # 企业邮箱
+    '.com.cn',    # 中国企业
+    '.net.cn',    # 中国网络
+    '.org.cn',    # 中国组织
+    
+    # 常用邮箱服务商（完整匹配）
+    'qq.com',
+    '163.com',
+    '126.com',
+    'gmail.com',
+    'outlook.com',
+    'hotmail.com',
+    'yahoo.com',
+    'icloud.com',
+    'foxmail.com',
+    'sina.com',
+    'sohu.com',
+    'aliyun.com',
+    '139.com',
+    'yeah.net',
+    'live.com',
+    'msn.com'
+    # 可以继续添加其他常用域名
+}
+
 # 一次性邮箱域名检查函数
 def is_disposable_email(email):
     try:
         domain = email.split('@')[1].lower()
+        
+        # 1. 检查完整域名是否在白名单中
+        if domain in VALID_EMAIL_SUFFIXES:
+            return False
+            
+        # 2. 检查域名后缀
+        for suffix in VALID_EMAIL_SUFFIXES:
+            if suffix.startswith('.') and domain.endswith(suffix):
+                return False
+                
+        # 3. 如果都不匹配，再检查是否是一次性邮箱
         return domain in disposable_email_domains.emails
-    except:
+        
+    except Exception as e:
+        logging.error(f"Error checking disposable email: {str(e)}")
         return True
 
 # 邮箱格式验证函数
