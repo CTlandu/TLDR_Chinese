@@ -1,245 +1,254 @@
 <template>
-  <div class="min-h-screen bg-base-100">
+  <div class="min-h-screen bg-base-100 flex flex-col">
     <Navbar />
 
-    <!-- 庆祝动画 -->
-    <div
-      v-if="showCelebration"
-      class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
-    >
-      <div class="celebration-animation text-center">
-        <div class="text-4xl sm:text-6xl mb-2">🎉</div>
-        <div class="text-xl sm:text-2xl font-bold text-primary">感谢订阅！</div>
-      </div>
-    </div>
-
-    <!-- Hero Section -->
-    <div class="max-w-4xl mx-auto px-4 py-6">
-      <!-- 标题和描述 -->
-      <div class="text-center mb-6">
-        <h1
-          class="text-3xl sm:text-4xl font-bold inline-flex flex-wrap justify-center gap-2"
-        >
-          <span class="text-primary">每日科技新闻</span>
-          <span class="text-base-content">用中文读懂全球科技圈</span>
-        </h1>
-
-        <p class="text-base text-base-content/80 mt-2">
-          每天
-          <span class="text-primary font-bold animate-pulse">3 分钟</span
-          >，了解最新科技动态。我们精选并翻译全球科技新闻，助你掌握行业脉搏。
-        </p>
-      </div>
-
-      <!-- 订阅表单 -->
-      <div class="max-w-md mx-auto mb-8">
-        <div class="flex flex-col gap-3">
-          <input
-            v-model="email"
-            type="email"
-            :placeholder="$t('emailPlaceholder')"
-            @keyup.enter="handleSubscribe"
-            class="input input-md h-12 w-full bg-base-200 border-2 border-primary/20 focus:border-primary transition-all duration-300"
-            :class="{ 'input-error': error }"
-          />
-          <button
-            @click="handleSubscribe"
-            :disabled="loading"
-            class="btn btn-primary btn-md h-12 text-white font-bold relative overflow-hidden group w-full sm:w-auto"
-          >
-            <span class="relative z-10">{{
-              loading ? '订阅中...' : '订阅 (完全免费！)'
-            }}</span>
-          </button>
-        </div>
-
-        <!-- 错误/成功消息和订阅者数量 -->
-        <div class="flex flex-col items-center text-center gap-2 mt-2">
-          <p
-            v-if="message"
-            :class="error ? 'text-error' : 'text-success'"
-            class="text-sm"
-          >
-            {{ message }}
-          </p>
-          <p class="text-base-content/60 text-sm">
-            已有
-            <span class="font-bold text-primary">{{
-              formattedSubscriberCount
-            }}</span>
-            位读者订阅
-          </p>
+    <!-- 主要内容 -->
+    <main>
+      <!-- 庆祝动画 -->
+      <div
+        v-if="showCelebration"
+        class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+      >
+        <div class="celebration-animation text-center">
+          <div class="text-4xl sm:text-6xl mb-2">🎉</div>
+          <div class="text-xl sm:text-2xl font-bold text-primary">
+            感谢订阅！
+          </div>
         </div>
       </div>
 
-      <!-- 特点展示 -->
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 items-start mb-6">
+      <!-- Hero Section -->
+      <div class="max-w-4xl mx-auto px-4 py-6">
+        <!-- 标题和描述 -->
+        <div class="text-center mb-6">
+          <h1
+            class="text-3xl sm:text-4xl font-bold inline-flex flex-wrap justify-center gap-2"
+          >
+            <span class="text-primary">每日科技新闻</span>
+            <span class="text-base-content">用中文读懂全球科技圈</span>
+          </h1>
+
+          <p class="text-base text-base-content/80 mt-2">
+            每天
+            <span class="text-primary font-bold animate-pulse">3 分钟</span
+            >，了解最新科技动态。我们精选并翻译全球科技新闻，助你掌握行业脉搏。
+          </p>
+        </div>
+
+        <!-- 订阅表单 -->
+        <div class="max-w-md mx-auto mb-8">
+          <div class="flex flex-col gap-3">
+            <input
+              v-model="email"
+              type="email"
+              :placeholder="$t('emailPlaceholder')"
+              @keyup.enter="handleSubscribe"
+              class="input input-md h-12 w-full bg-base-200 border-2 border-primary/20 focus:border-primary transition-all duration-300"
+              :class="{ 'input-error': error }"
+            />
+            <button
+              @click="handleSubscribe"
+              :disabled="loading"
+              class="btn btn-primary btn-md h-12 text-white font-bold relative overflow-hidden group w-full sm:w-auto"
+            >
+              <span class="relative z-10">{{
+                loading ? '订阅中...' : '订阅 (完全免费！)'
+              }}</span>
+            </button>
+          </div>
+
+          <!-- 错误/成功消息和订阅者数量 -->
+          <div class="flex flex-col items-center text-center gap-2 mt-2">
+            <p
+              v-if="message"
+              :class="error ? 'text-error' : 'text-success'"
+              class="text-sm"
+            >
+              {{ message }}
+            </p>
+            <p class="text-base-content/60 text-sm">
+              已有
+              <span class="font-bold text-primary">{{
+                formattedSubscriberCount
+              }}</span>
+              位读者订阅
+            </p>
+          </div>
+        </div>
+
         <!-- 特点展示 -->
-        <div class="col-span-1 flex items-center gap-2">
-          <div class="text-2xl">🎯</div>
-          <div>
-            <h3 class="font-bold text-sm">精选内容</h3>
-            <p class="text-base-content/70 text-xs">每日筛选重要科技新闻</p>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 items-start mb-6">
+          <!-- 特点展示 -->
+          <div class="col-span-1 flex items-center gap-2">
+            <div class="text-2xl">🎯</div>
+            <div>
+              <h3 class="font-bold text-sm">精选内容</h3>
+              <p class="text-base-content/70 text-xs">每日筛选重要科技新闻</p>
+            </div>
+          </div>
+
+          <div class="col-span-1 flex items-center gap-2">
+            <div class="text-2xl">🚀</div>
+            <div>
+              <h3 class="font-bold text-sm">快速阅读</h3>
+              <p class="text-base-content/70 text-xs">3分钟了解科技动态</p>
+            </div>
+          </div>
+
+          <div class="col-span-1 flex items-center gap-2">
+            <div class="text-2xl">💡</div>
+            <div>
+              <h3 class="font-bold text-sm">深度洞察</h3>
+              <p class="text-base-content/70 text-xs">提供专业解读视角</p>
+            </div>
           </div>
         </div>
 
-        <div class="col-span-1 flex items-center gap-2">
-          <div class="text-2xl">🚀</div>
-          <div>
-            <h3 class="font-bold text-sm">快速阅读</h3>
-            <p class="text-base-content/70 text-xs">3分钟了解科技动态</p>
-          </div>
-        </div>
-
-        <div class="col-span-1 flex items-center gap-2">
-          <div class="text-2xl">💡</div>
-          <div>
-            <h3 class="font-bold text-sm">深度洞察</h3>
-            <p class="text-base-content/70 text-xs">提供专业解读视角</p>
+        <!-- 微信扫码部分 -->
+        <div class="py-2 rounded-lg">
+          <div
+            class="flex flex-col md:flex-row items-center justify-center gap-4"
+          >
+            <img
+              src="/assets/扫码_搜索联合传播样式-标准色版.png"
+              alt="微信公众号二维码"
+              class="w-64 h-auto object-contain"
+            />
+            <div class="text-center">
+              <h3 class="text-lg font-bold text-primary mb-1">
+                扫码关注微信公众号
+              </h3>
+              <p class="text-base-content/70 text-sm">获取每日科技资讯</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- 微信扫码部分 -->
-      <div class="py-2 rounded-lg">
-        <div
-          class="flex flex-col md:flex-row items-center justify-center gap-4"
-        >
-          <img
-            src="/assets/扫码_搜索联合传播样式-标准色版.png"
-            alt="微信公众号二维码"
-            class="w-64 h-auto object-contain"
-          />
-          <div class="text-center">
-            <h3 class="text-lg font-bold text-primary mb-1">
-              扫码关注微信公众号
-            </h3>
-            <p class="text-base-content/70 text-sm">获取每日科技资讯</p>
+      <!-- 精选新闻栏目 -->
+      <div class="max-w-4xl mx-auto px-4 py-1">
+        <h2 class="text-2xl font-bold mb-6 text-center">🌟 精选新闻</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- 科技公司动态 -->
+          <div
+            class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300"
+          >
+            <a
+              :href="featuredNews.company?.url"
+              target="_blank"
+              class="cursor-pointer"
+            >
+              <figure class="h-48">
+                <img
+                  :src="featuredNews.company?.image || '/placeholder.jpg'"
+                  :alt="featuredNews.company?.title"
+                  class="w-full h-full object-cover"
+                  @error="handleImageError($event, 'company')"
+                />
+              </figure>
+              <div class="card-body p-4">
+                <span class="text-xs text-primary font-semibold mb-2"
+                  >科技公司动态</span
+                >
+                <h3
+                  class="card-title text-base mb-2 hover:text-primary transition-colors"
+                >
+                  {{ featuredNews.company?.title }}
+                </h3>
+                <p class="text-sm text-base-content/70">
+                  {{ truncateText(featuredNews.company?.content) }}
+                </p>
+                <div class="text-xs text-base-content/50 mt-2">
+                  {{ featuredNews.company?.date }}
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <!-- 科技要闻 -->
+          <div
+            class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300"
+          >
+            <a
+              :href="featuredNews.headlines?.url"
+              target="_blank"
+              class="cursor-pointer"
+            >
+              <figure class="h-48">
+                <img
+                  :src="featuredNews.headlines?.image || '/placeholder.jpg'"
+                  :alt="featuredNews.headlines?.title"
+                  class="w-full h-full object-cover"
+                  @error="handleImageError($event, 'headlines')"
+                />
+              </figure>
+              <div class="card-body p-4">
+                <span class="text-xs text-primary font-semibold mb-2"
+                  >科技要闻</span
+                >
+                <h3
+                  class="card-title text-base mb-2 hover:text-primary transition-colors"
+                >
+                  {{ featuredNews.headlines?.title }}
+                </h3>
+                <p class="text-sm text-base-content/70">
+                  {{ truncateText(featuredNews.headlines?.content) }}
+                </p>
+                <div class="text-xs text-base-content/50 mt-2">
+                  {{ featuredNews.headlines?.date }}
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <!-- 未来科技 -->
+          <div
+            class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300"
+          >
+            <a
+              :href="featuredNews.future?.url"
+              target="_blank"
+              class="cursor-pointer"
+            >
+              <figure class="h-48">
+                <img
+                  :src="featuredNews.future?.image || '/placeholder.jpg'"
+                  :alt="featuredNews.future?.title"
+                  class="w-full h-full object-cover"
+                  @error="handleImageError($event, 'future')"
+                />
+              </figure>
+              <div class="card-body p-4">
+                <span class="text-xs text-primary font-semibold mb-2"
+                  >未来科技</span
+                >
+                <h3
+                  class="card-title text-base mb-2 hover:text-primary transition-colors"
+                >
+                  {{ featuredNews.future?.title }}
+                </h3>
+                <p class="text-sm text-base-content/70">
+                  {{ truncateText(featuredNews.future?.content) }}
+                </p>
+                <div class="text-xs text-base-content/50 mt-2">
+                  {{ featuredNews.future?.date }}
+                </div>
+              </div>
+            </a>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 精选新闻栏目 -->
-    <div class="max-w-4xl mx-auto px-4 py-1">
-      <h2 class="text-2xl font-bold mb-6 text-center">🌟 精选新闻</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- 科技公司动态 -->
-        <div
-          class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300"
-        >
-          <a
-            :href="featuredNews.company?.url"
-            target="_blank"
-            class="cursor-pointer"
-          >
-            <figure class="h-48">
-              <img
-                :src="featuredNews.company?.image || '/placeholder.jpg'"
-                :alt="featuredNews.company?.title"
-                class="w-full h-full object-cover"
-                @error="handleImageError($event, 'company')"
-              />
-            </figure>
-            <div class="card-body p-4">
-              <span class="text-xs text-primary font-semibold mb-2"
-                >科技公司动态</span
-              >
-              <h3
-                class="card-title text-base mb-2 hover:text-primary transition-colors"
-              >
-                {{ featuredNews.company?.title }}
-              </h3>
-              <p class="text-sm text-base-content/70">
-                {{ truncateText(featuredNews.company?.content) }}
-              </p>
-              <div class="text-xs text-base-content/50 mt-2">
-                {{ featuredNews.company?.date }}
-              </div>
-            </div>
-          </a>
-        </div>
+      <LatestArticles />
+    </main>
 
-        <!-- 科技要闻 -->
-        <div
-          class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300"
-        >
-          <a
-            :href="featuredNews.headlines?.url"
-            target="_blank"
-            class="cursor-pointer"
-          >
-            <figure class="h-48">
-              <img
-                :src="featuredNews.headlines?.image || '/placeholder.jpg'"
-                :alt="featuredNews.headlines?.title"
-                class="w-full h-full object-cover"
-                @error="handleImageError($event, 'headlines')"
-              />
-            </figure>
-            <div class="card-body p-4">
-              <span class="text-xs text-primary font-semibold mb-2"
-                >科技要闻</span
-              >
-              <h3
-                class="card-title text-base mb-2 hover:text-primary transition-colors"
-              >
-                {{ featuredNews.headlines?.title }}
-              </h3>
-              <p class="text-sm text-base-content/70">
-                {{ truncateText(featuredNews.headlines?.content) }}
-              </p>
-              <div class="text-xs text-base-content/50 mt-2">
-                {{ featuredNews.headlines?.date }}
-              </div>
-            </div>
-          </a>
-        </div>
-
-        <!-- 未来科技 -->
-        <div
-          class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300"
-        >
-          <a
-            :href="featuredNews.future?.url"
-            target="_blank"
-            class="cursor-pointer"
-          >
-            <figure class="h-48">
-              <img
-                :src="featuredNews.future?.image || '/placeholder.jpg'"
-                :alt="featuredNews.future?.title"
-                class="w-full h-full object-cover"
-                @error="handleImageError($event, 'future')"
-              />
-            </figure>
-            <div class="card-body p-4">
-              <span class="text-xs text-primary font-semibold mb-2"
-                >未来科技</span
-              >
-              <h3
-                class="card-title text-base mb-2 hover:text-primary transition-colors"
-              >
-                {{ featuredNews.future?.title }}
-              </h3>
-              <p class="text-sm text-base-content/70">
-                {{ truncateText(featuredNews.future?.content) }}
-              </p>
-              <div class="text-xs text-base-content/50 mt-2">
-                {{ featuredNews.future?.date }}
-              </div>
-            </div>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <LatestArticles />
+    <!-- 添加 Footer -->
+    <Footer />
   </div>
 </template>
 
 <script>
 import Navbar from '../components/Navbar.vue';
+import Footer from '../components/Footer.vue';
 import LatestArticles from '../components/LatestArticles.vue';
 import axios from 'axios';
 
@@ -248,6 +257,7 @@ export default {
   components: {
     Navbar,
     LatestArticles,
+    Footer,
   },
   data() {
     return {
