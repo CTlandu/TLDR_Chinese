@@ -1,5 +1,5 @@
 <template>
-  <section class="py-10 bg-base-200">
+  <section class="max-w-4xl mx-auto py-10">
     <div class="container mx-auto px-4">
       <h2 class="text-3xl font-bold text-center mb-8">
         {{ $t('latestNews') }}

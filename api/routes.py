@@ -495,7 +495,7 @@ def test_send_newsletter():
         if not latest_newsletter:
             return jsonify({'error': '没有找到可用的 newsletter'}), 404
             
-        subject = f"TLDR 全球科技日报 {latest_newsletter.date.strftime('%Y-%m-%d')}"
+        subject = f"[{latest_newsletter.generated_title}] {latest_newsletter.date.strftime('%Y-%m-%d')}"
         
         # 创建 Mailgun 服务实例
         mailgun = MailgunService(
@@ -592,6 +592,84 @@ def get_subscriber_count():
         
     except Exception as e:
         logging.error(f"Error getting subscriber count: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'success': False
+        }), 500
+    
+    
+@bp.route('/api/featured-news', methods=['GET'])
+def get_featured_news():
+    try:
+        # 获取最近的几期 newsletter（多获取几期以便筛选有图片的文章）
+        latest_newsletters = DailyNewsletter.objects.order_by('-date').limit(3)
+        
+        if not latest_newsletters:
+            return jsonify({'error': '没有找到最新内容'}), 404
+            
+        featured_news = {
+            'company': None,
+            'headlines': None,
+            'future': None
+        }
+        
+        # 用于记录每个分类是否已找到合适的文章
+        found_sections = set()
+        
+        # 遍历最近的几期 newsletter
+        for newsletter in latest_newsletters:
+            for section in newsletter.sections:
+                # 如果该分类已经找到文章，跳过
+                if len(found_sections) == 3:
+                    break
+                    
+                # 筛选有图片的文章
+                articles_with_images = [
+                    article for article in section['articles']
+                    if article.get('image_url') and article['image_url'].strip()
+                ]
+                
+                if not articles_with_images:
+                    continue
+                    
+                first_article = articles_with_images[0]
+                
+                # 根据分区名称分配文章
+                if section['section'] == 'Big Tech & Startups' and 'company' not in found_sections:
+                    featured_news['company'] = {
+                        'title': first_article.get('title', ''),
+                        'content': first_article.get('content', ''),
+                        'image': first_article.get('image_url', ''),
+                        'date': newsletter.date.strftime('%Y-%m-%d'),
+                        'url': first_article.get('url', '')
+                    }
+                    found_sections.add('company')
+                    
+                elif section['section'] == 'Miscellaneous' and 'headlines' not in found_sections:
+                    featured_news['headlines'] = {
+                        'title': first_article.get('title', ''),
+                        'content': first_article.get('content', ''),
+                        'image': first_article.get('image_url', ''),
+                        'date': newsletter.date.strftime('%Y-%m-%d')
+                    }
+                    found_sections.add('headlines')
+                    
+                elif section['section'] == 'Science & Futuristic Technology' and 'future' not in found_sections:
+                    featured_news['future'] = {
+                        'title': first_article.get('title', ''),
+                        'content': first_article.get('content', ''),
+                        'image': first_article.get('image_url', ''),
+                        'date': newsletter.date.strftime('%Y-%m-%d')
+                    }
+                    found_sections.add('future')
+        
+        return jsonify({
+            'success': True,
+            'featuredNews': featured_news
+        })
+        
+    except Exception as e:
+        logging.error(f"Error getting featured news: {str(e)}")
         return jsonify({
             'error': str(e),
             'success': False

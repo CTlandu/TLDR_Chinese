@@ -1,6 +1,7 @@
 <template>
-  <div>
+  <div class="min-h-screen bg-base-100">
     <Navbar />
+
     <!-- 庆祝动画 -->
     <div
       v-if="showCelebration"
@@ -13,75 +14,225 @@
     </div>
 
     <!-- Hero Section -->
-    <section class="bg-base-300 text-base-content py-4 sm:py-8">
-      <div class="container mx-auto text-center px-4">
-        <!-- 响应式标题 -->
-        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
-          <span
-            class="text-4xl sm:text-5xl lg:text-6xl text-primary animate-pulse"
-          >
-            {{ $t('number') }}
-          </span>
-          {{ $t('welcomePrefix') }}
-          <span class="whitespace-normal sm:whitespace-nowrap">
-            {{ $t('welcomeSuffix') }}
-            <span class="text-2xl sm:text-4xl">💓</span>
-            <span class="text-2xl sm:text-4xl">💻</span>
-          </span>
+    <div class="max-w-4xl mx-auto px-4 py-6">
+      <!-- 标题和描述 -->
+      <div class="text-center mb-6">
+        <h1
+          class="text-3xl sm:text-4xl font-bold inline-flex flex-wrap justify-center gap-2"
+        >
+          <span class="text-primary">每日科技新闻</span>
+          <span class="text-base-content">用中文读懂全球科技圈</span>
         </h1>
 
-        <!-- 响应式描述文本 -->
-        <p class="text-base sm:text-xl mb-8 sm:mb-12 max-w-2xl mx-auto px-4">
-          <span class="text-primary font-bold">{{ $t('free') }}</span>
-          {{ $t('descriptionPrefix') }}
-          <br class="hidden sm:block" />
-          {{ $t('descriptionSuffix') }}
+        <p class="text-base text-base-content/80 mt-2">
+          每天
+          <span class="text-primary font-bold animate-pulse">3 分钟</span
+          >，了解最新科技动态。我们精选并翻译全球科技新闻，助你掌握行业脉搏。
         </p>
+      </div>
 
-        <!-- 订阅表单 -->
-        <div
-          class="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-2xl mx-auto px-4"
-        >
+      <!-- 订阅表单 -->
+      <div class="max-w-md mx-auto mb-8">
+        <div class="flex flex-col gap-3">
           <input
             v-model="email"
             type="email"
             :placeholder="$t('emailPlaceholder')"
             @keyup.enter="handleSubscribe"
-            class="input input-bordered input-lg w-full max-w-lg text-base sm:text-lg border-primary shadow-lg hover:shadow-primary/50 transition-all duration-300 animate-bounce-slow focus:animate-none"
+            class="input input-md h-12 w-full bg-base-200 border-2 border-primary/20 focus:border-primary transition-all duration-300"
             :class="{ 'input-error': error }"
           />
           <button
             @click="handleSubscribe"
             :disabled="loading"
-            class="btn btn-primary btn-lg text-base sm:text-lg w-full sm:w-auto sm:min-w-[200px] hover:scale-105 transition-transform"
+            class="btn btn-primary btn-md h-12 text-white font-bold relative overflow-hidden group w-full sm:w-auto"
           >
-            {{ loading ? '订阅中...' : $t('subscribe') }}
+            <span class="relative z-10">{{
+              loading ? '订阅中...' : '订阅 (完全免费！)'
+            }}</span>
           </button>
         </div>
 
-        <!-- 消息提示 -->
-        <div v-if="message" class="mt-4 text-center px-4">
-          <div
+        <!-- 错误/成功消息和订阅者数量 -->
+        <div class="flex flex-col items-center text-center gap-2 mt-2">
+          <p
+            v-if="message"
             :class="error ? 'text-error' : 'text-success'"
-            class="text-sm sm:text-base"
+            class="text-sm"
           >
             {{ message }}
+          </p>
+          <p class="text-base-content/60 text-sm">
+            已有
+            <span class="font-bold text-primary">{{
+              formattedSubscriberCount
+            }}</span>
+            位读者订阅
+          </p>
+        </div>
+      </div>
+
+      <!-- 特点展示 -->
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 items-start mb-6">
+        <!-- 特点展示 -->
+        <div class="col-span-1 flex items-center gap-2">
+          <div class="text-2xl">🎯</div>
+          <div>
+            <h3 class="font-bold text-sm">精选内容</h3>
+            <p class="text-base-content/70 text-xs">每日筛选重要科技新闻</p>
           </div>
         </div>
 
-        <!-- 订阅者数量 -->
-        <p class="mt-6 sm:mt-8 text-base sm:text-lg opacity-75 px-4">
-          加入超过
-          <span
-            class="font-bold text-primary transition-all duration-500"
-            :class="{ 'animate-number': isCountAnimating }"
-          >
-            {{ formattedSubscriberCount }}
-          </span>
-          读者的每日推送邮件
-        </p>
+        <div class="col-span-1 flex items-center gap-2">
+          <div class="text-2xl">🚀</div>
+          <div>
+            <h3 class="font-bold text-sm">快速阅读</h3>
+            <p class="text-base-content/70 text-xs">3分钟了解科技动态</p>
+          </div>
+        </div>
+
+        <div class="col-span-1 flex items-center gap-2">
+          <div class="text-2xl">💡</div>
+          <div>
+            <h3 class="font-bold text-sm">深度洞察</h3>
+            <p class="text-base-content/70 text-xs">提供专业解读视角</p>
+          </div>
+        </div>
       </div>
-    </section>
+
+      <!-- 微信扫码部分 -->
+      <div class="py-2 rounded-lg">
+        <div
+          class="flex flex-col md:flex-row items-center justify-center gap-4"
+        >
+          <img
+            src="/assets/扫码_搜索联合传播样式-标准色版.png"
+            alt="微信公众号二维码"
+            class="w-64 h-auto object-contain"
+          />
+          <div class="text-center">
+            <h3 class="text-lg font-bold text-primary mb-1">
+              扫码关注微信公众号
+            </h3>
+            <p class="text-base-content/70 text-sm">获取每日科技资讯</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 精选新闻栏目 -->
+    <div class="max-w-4xl mx-auto px-4 py-1">
+      <h2 class="text-2xl font-bold mb-6 text-center">🌟 精选新闻</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- 科技公司动态 -->
+        <div
+          class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300"
+        >
+          <a
+            :href="featuredNews.company?.url"
+            target="_blank"
+            class="cursor-pointer"
+          >
+            <figure class="h-48">
+              <img
+                :src="featuredNews.company?.image || '/placeholder.jpg'"
+                :alt="featuredNews.company?.title"
+                class="w-full h-full object-cover"
+                @error="handleImageError($event, 'company')"
+              />
+            </figure>
+            <div class="card-body p-4">
+              <span class="text-xs text-primary font-semibold mb-2"
+                >科技公司动态</span
+              >
+              <h3
+                class="card-title text-base mb-2 hover:text-primary transition-colors"
+              >
+                {{ featuredNews.company?.title }}
+              </h3>
+              <p class="text-sm text-base-content/70">
+                {{ truncateText(featuredNews.company?.content) }}
+              </p>
+              <div class="text-xs text-base-content/50 mt-2">
+                {{ featuredNews.company?.date }}
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- 科技要闻 -->
+        <div
+          class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300"
+        >
+          <a
+            :href="featuredNews.headlines?.url"
+            target="_blank"
+            class="cursor-pointer"
+          >
+            <figure class="h-48">
+              <img
+                :src="featuredNews.headlines?.image || '/placeholder.jpg'"
+                :alt="featuredNews.headlines?.title"
+                class="w-full h-full object-cover"
+                @error="handleImageError($event, 'headlines')"
+              />
+            </figure>
+            <div class="card-body p-4">
+              <span class="text-xs text-primary font-semibold mb-2"
+                >科技要闻</span
+              >
+              <h3
+                class="card-title text-base mb-2 hover:text-primary transition-colors"
+              >
+                {{ featuredNews.headlines?.title }}
+              </h3>
+              <p class="text-sm text-base-content/70">
+                {{ truncateText(featuredNews.headlines?.content) }}
+              </p>
+              <div class="text-xs text-base-content/50 mt-2">
+                {{ featuredNews.headlines?.date }}
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- 未来科技 -->
+        <div
+          class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300"
+        >
+          <a
+            :href="featuredNews.future?.url"
+            target="_blank"
+            class="cursor-pointer"
+          >
+            <figure class="h-48">
+              <img
+                :src="featuredNews.future?.image || '/placeholder.jpg'"
+                :alt="featuredNews.future?.title"
+                class="w-full h-full object-cover"
+                @error="handleImageError($event, 'future')"
+              />
+            </figure>
+            <div class="card-body p-4">
+              <span class="text-xs text-primary font-semibold mb-2"
+                >未来科技</span
+              >
+              <h3
+                class="card-title text-base mb-2 hover:text-primary transition-colors"
+              >
+                {{ featuredNews.future?.title }}
+              </h3>
+              <p class="text-sm text-base-content/70">
+                {{ truncateText(featuredNews.future?.content) }}
+              </p>
+              <div class="text-xs text-base-content/50 mt-2">
+                {{ featuredNews.future?.date }}
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
 
     <LatestArticles />
   </div>
@@ -108,6 +259,23 @@ export default {
       showCelebration: false,
       isCountAnimating: false,
       formattedSubscriberCount: '5,000',
+      featuredNews: {
+        company: {
+          title: '',
+          content: '',
+          image: '',
+        },
+        headlines: {
+          title: '',
+          content: '',
+          image: '',
+        },
+        future: {
+          title: '',
+          content: '',
+          image: '',
+        },
+      },
     };
   },
   computed: {
@@ -117,6 +285,7 @@ export default {
   },
   async mounted() {
     await this.fetchSubscriberCount();
+    await this.fetchFeaturedNews();
   },
   methods: {
     async fetchSubscriberCount() {
@@ -226,6 +395,22 @@ export default {
 
       requestAnimationFrame(animate);
     },
+
+    truncateText(text) {
+      return text.length > 100 ? text.substring(0, 100) + '...' : text;
+    },
+
+    async fetchFeaturedNews() {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const response = await axios.get(`${API_URL}/api/featured-news`);
+        if (response.data.success) {
+          this.featuredNews = response.data.featuredNews;
+        }
+      } catch (error) {
+        console.error('Error fetching featured news:', error);
+      }
+    },
   },
   watch: {
     subscriberCount: {
@@ -238,7 +423,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 @keyframes bounce-slow {
   0%,
   100% {
@@ -247,16 +432,6 @@ export default {
   50% {
     transform: translateY(1%);
   }
-}
-
-.animate-bounce-slow {
-  animation: bounce-slow 2s infinite;
-}
-
-.input:focus {
-  outline: none;
-  border-color: theme('colors.primary');
-  box-shadow: 0 0 0 2px theme('colors.primary' / 20%);
 }
 
 .celebration-animation {
@@ -299,15 +474,61 @@ export default {
   }
 }
 
-/* 确保动画元素在最上层 */
-.fixed {
-  position: fixed;
-  z-index: 9999;
+.card {
+  @apply transition-all duration-300;
 }
 
-.recaptcha-container {
-  margin: 1rem 0;
-  display: flex;
-  justify-content: center;
+.card:hover {
+  @apply transform -translate-y-1;
+}
+
+.card figure img {
+  @apply transition-transform duration-300;
+}
+
+.card:hover figure img {
+  @apply transform scale-105;
+}
+
+/* 添加水平弹跳动画 */
+@keyframes bounce-x {
+  0%,
+  100% {
+    transform: translateX(25%) rotate(180deg);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateX(0) rotate(180deg);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-x {
+  animation: bounce-x 1s infinite;
+}
+
+/* 按钮悬停效果 */
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* 脉冲动画增强 */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
 }
 </style>

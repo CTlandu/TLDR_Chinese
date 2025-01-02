@@ -2,7 +2,7 @@
   <div class="navbar bg-base-200">
     <div class="flex-1 flex items-center gap-2 pl-4">
       <router-link to="/" class="flex items-center gap-2">
-        <img src="../../assets/logo.png" alt="TLDR Logo" class="h-8 w-8" />
+        <img src="../../assets/logo-3.png" alt="TLDR Logo" class="h-8 w-8" />
         <span class="rainbow-text font-bold text-xl">太长不看</span>
       </router-link>
       <div class="divider divider-horizontal mx-2"></div>
