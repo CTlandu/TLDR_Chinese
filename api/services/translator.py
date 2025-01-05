@@ -12,7 +12,7 @@ class TranslatorService:
         self.client = httpx.Client(timeout=120.0)  # 增加超时时间到120秒
         
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-    def batch_translate(self, texts, chunk_size=5):
+    def batch_translate(self, texts, chunk_size=3):
         """
         批量翻译文本，每次处理chunk_size个文本
         """
