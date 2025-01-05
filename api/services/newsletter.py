@@ -124,101 +124,91 @@ def fetch_tldr_content(date):
             return None
             
         articles = []
+        article_info = []
         all_titles = []
         all_contents = []
-        article_info = []  # 存储所有文章信息
+        current_section = None
         
-        # 首先收集所有需要翻译的内容
         for section in sections:
-            header = section.find('h3', class_='text-center font-bold')
-            if not header or "sponsor" in header.text.lower():
+            try:
+                section_title = section.find('h2').text.strip()
+                articles_div = section.find_all('div', class_='article')
+                
+                for article in articles_div:
+                    try:
+                        title = article.find('h3').text.strip()
+                        content = article.find('p').text.strip()
+                        url = article.find('a')['href']
+                        
+                        article_info.append({
+                            'section': section_title,
+                            'title_en': title,
+                            'content_en': content,
+                            'url': url
+                        })
+                        
+                        all_titles.append(title)
+                        all_contents.append(content)
+                    except (AttributeError, KeyError, IndexError) as e:
+                        logging.error(f"Error processing article: {str(e)}")
+                        continue
+                        
+            except (AttributeError, KeyError, IndexError) as e:
+                logging.error(f"Error processing section: {str(e)}")
                 continue
                 
-            section_title = header.text.strip()
-            section_articles = []
+        if not article_info:
+            logging.warning("No valid articles found")
+            return None
             
-            for article in section.find_all('article', class_='mt-3'):
-                title_elem = article.find('h3')
-                if not title_elem or "sponsor" in title_elem.text.lower():
-                    continue
-                    
-                title = title_elem.text.strip()
-                content = article.find('div', class_='newsletter-html')
-                content_html = ''.join(str(tag) for tag in content.contents) if content else ""
-                
-                link = article.find('a', class_='font-bold')
-                url = link['href'] if link else ""
-                
-                all_titles.append(title)
-                all_contents.append(content_html)
-                article_info.append({
-                    'section': section_title,
-                    'title_en': title,
-                    'content_en': content_html,
-                    'url': url
-                })
-        
         # 批量翻译所有内容
-        translator = TranslatorService(api_key=current_app.config['ERNIE_API_KEY'], secret_key=current_app.config['ERNIE_SECRET_KEY'])
-        translated_titles = translator.batch_translate(all_titles)
-        translated_contents = translator.batch_translate(all_contents)
+        translator = TranslatorService(
+            api_key=current_app.config['ERNIE_API_KEY'], 
+            secret_key=current_app.config['ERNIE_SECRET_KEY']
+        )
+        
+        translated_titles = translator.batch_translate(all_titles) if all_titles else []
+        translated_contents = translator.batch_translate(all_contents) if all_contents else []
         
         # 组织翻译后的内容
         current_section = None
         section_articles = []
+        articles = []
         
         for i, info in enumerate(article_info):
-            if current_section != info['section']:
-                if current_section and section_articles:
-                    articles.append({
-                        'section': current_section,
-                        'articles': section_articles
-                    })
-                current_section = info['section']
-                section_articles = []
-            
-            image_url = extract_article_image(info['url'])
-            article_content = {
-                'title': translated_titles[i],
-                'title_en': info['title_en'],
-                'content': translated_contents[i],
-                'content_en': info['content_en'],
-                'url': info['url'],
-                'image_url': image_url
-            }
-            section_articles.append(article_content)
-        
+            try:
+                if current_section != info['section']:
+                    if current_section and section_articles:
+                        articles.append({
+                            'section': current_section,
+                            'articles': section_articles
+                        })
+                    current_section = info['section']
+                    section_articles = []
+                
+                image_url = extract_article_image(info['url'])
+                article_content = {
+                    'title': translated_titles[i] if i < len(translated_titles) else info['title_en'],
+                    'title_en': info['title_en'],
+                    'content': translated_contents[i] if i < len(translated_contents) else info['content_en'],
+                    'content_en': info['content_en'],
+                    'url': info['url'],
+                    'image_url': image_url
+                }
+                section_articles.append(article_content)
+            except Exception as e:
+                logging.error(f"Error processing article {i}: {str(e)}")
+                continue
+                
         # 添加最后一个section
         if current_section and section_articles:
             articles.append({
                 'section': current_section,
                 'articles': section_articles
             })
-        
-        # 只有在成功获取到文章内容后，才生成标题
-        if articles:
-            try:
-                title_generator = TitleGeneratorService(
-                    os.environ.get('ERNIE_API_KEY'),
-                    os.environ.get('ERNIE_SECRET_KEY')
-                )
-                generated_title = title_generator.generate_title(articles)
-                
-                return {
-                    'sections': articles,
-                    'generated_title': generated_title
-                }
-            except Exception as e:
-                logging.error(f"Error generating title: {str(e)}")
-                # 如果标题生成失败，使用默认标题
-                return {
-                    'sections': articles,
-                    'generated_title': '今日科技新闻速递'
-                }
-        else:
-            logging.warning("No valid articles found")
-            return None
             
+        return articles
+        
     except Exception as e:
         logging.error(f"Error fetching content: {str(e)}")
         return None

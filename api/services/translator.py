@@ -102,6 +102,7 @@ class TranslatorService:
                     "messages": [{
                         "role": "user", 
                         "content": f"You are a professional translator. Please translate the following English text to Chinese. 尽量翻译得贴近中国人的说话方式，不要太有机翻味。该简洁或是更改语序的时候可以进行修改。 Keep the original format and DO NOT add any HTML tags:\n\n{combined_text}"
+                        # "content": f"请将以下英文文本翻译成中文。每段文本之间用'===SPLIT==='分隔。请确保返回的翻译结果数量与输入文本数量相同，并保持相同的分隔符：\n\n{combined_text}"
                     }],
                     "temperature": 0.3
                 },
