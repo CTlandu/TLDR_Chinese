@@ -101,7 +101,7 @@ class TranslatorService:
                 json={
                     "messages": [{
                         "role": "user", 
-                        "content": f"You are a professional translator. Please translate the following English text to Chinese. Keep the original format and DO NOT add any HTML tags:\n\n{combined_text}"
+                        "content": f"You are a professional translator. Please translate the following English text to Chinese. 尽量翻译得贴近中国人的说话方式，不要太有机翻味。该简洁或是更改语序的时候可以进行修改。 Keep the original format and DO NOT add any HTML tags:\n\n{combined_text}"
                     }],
                     "temperature": 0.3
                 },
