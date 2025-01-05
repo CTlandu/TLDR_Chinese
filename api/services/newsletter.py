@@ -108,18 +108,28 @@ def fetch_tldr_content(date):
     
     try:
         response = requests.get(url, timeout=30)
+        logging.info(f"Response status code: {response.status_code}")
+        
+        # 如果页面不存在，直接返回 None
         if response.status_code != 200:
             logging.warning(f"Failed to fetch content: HTTP {response.status_code}")
             return None
             
         soup = BeautifulSoup(response.text, 'html.parser')
+        sections = soup.find_all('section')
+        
+        # 如果没有找到任何 section，返回 None
+        if not sections:
+            logging.warning("No sections found in the page")
+            return None
+            
         articles = []
         all_titles = []
         all_contents = []
         article_info = []  # 存储所有文章信息
         
         # 首先收集所有需要翻译的内容
-        for section in soup.find_all('section'):
+        for section in sections:
             header = section.find('h3', class_='text-center font-bold')
             if not header or "sponsor" in header.text.lower():
                 continue
@@ -149,7 +159,7 @@ def fetch_tldr_content(date):
                 })
         
         # 批量翻译所有内容
-        translator = TranslatorService(current_app.config['DEEPSEEK_API_KEY'])
+        translator = TranslatorService(api_key=current_app.config['ERNIE_API_KEY'], secret_key=current_app.config['ERNIE_SECRET_KEY'])
         translated_titles = translator.batch_translate(all_titles)
         translated_contents = translator.batch_translate(all_contents)
         
@@ -185,18 +195,30 @@ def fetch_tldr_content(date):
                 'articles': section_articles
             })
         
-        # 生成标题
-        title_generator = TitleGeneratorService(
-            os.environ.get('ERNIE_API_KEY'),
-            os.environ.get('ERNIE_SECRET_KEY')
-        )
-        generated_title = title_generator.generate_title(articles)
-        
-        return {
-            'sections': articles,
-            'generated_title': generated_title
-        }
-        
+        # 只有在成功获取到文章内容后，才生成标题
+        if articles:
+            try:
+                title_generator = TitleGeneratorService(
+                    os.environ.get('ERNIE_API_KEY'),
+                    os.environ.get('ERNIE_SECRET_KEY')
+                )
+                generated_title = title_generator.generate_title(articles)
+                
+                return {
+                    'sections': articles,
+                    'generated_title': generated_title
+                }
+            except Exception as e:
+                logging.error(f"Error generating title: {str(e)}")
+                # 如果标题生成失败，使用默认标题
+                return {
+                    'sections': articles,
+                    'generated_title': '今日科技新闻速递'
+                }
+        else:
+            logging.warning("No valid articles found")
+            return None
+            
     except Exception as e:
-        logging.error(f"Error in fetch_tldr_content: {str(e)}")
+        logging.error(f"Error fetching content: {str(e)}")
         return None
