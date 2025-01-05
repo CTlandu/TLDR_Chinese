@@ -23,4 +23,10 @@ daemon = False
 reload = True
 
 # 进程名称
-proc_name = 'tldr-chinese' 
+proc_name = 'tldr-chinese'
+
+# 指定 Python 路径
+pythonpath = '.'
+
+# 指定 WSGI 应用
+wsgi_app = 'run:app' 
