@@ -6,7 +6,6 @@ from datetime import timedelta
 from .services.emoji_mapper import get_section_emoji, clean_reading_time, get_title_emoji
 from .models.article import DailyNewsletter
 import logging
-from flask import make_response
 from .services.mailgun_service import MailgunService
 from .models.subscriber import Subscriber
 import secrets
@@ -14,10 +13,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import re
 import disposable_email_domains
-import requests
-import json
-from io import BytesIO
-import base64
 
 bp = Blueprint('main', __name__)
 
@@ -30,6 +25,7 @@ def after_request(response):
     origin = request.headers.get('Origin')
     allowed_origins = [
         'https://www.tldrnewsletter.cn',
+        'https://tldrnewsletter.cn',
         'http://localhost:5173',  # 添加本地开发环境
         'http://localhost:3000',
         'https://tldrnewsletter.cn',
