@@ -9,7 +9,7 @@ import httpx
 class TranslatorService:
     def __init__(self, api_key):
         self.api_key = api_key
-        self.client = httpx.Client(timeout=60.0)  # 增加超时时间到30秒
+        self.client = httpx.Client(timeout=120.0)  # 增加超时时间到120秒
         
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     def batch_translate(self, texts, chunk_size=5):
