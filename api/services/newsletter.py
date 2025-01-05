@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
 import pytz
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import lru_cache
 import time
 from ..services.translator import TranslatorService
@@ -12,7 +12,6 @@ import logging
 import json
 import os
 from ..services.title_generator import TitleGeneratorService
-from pymongo import MongoClient
 
 def get_newsletter(date=None):
     """
@@ -50,44 +49,54 @@ def get_newsletter(date=None):
             logging.warning("数据库中没有简报")
             return None
             
-        # 使用 MongoDB 作为分布式锁
-        client = MongoClient()
-        db = client['test']
-        lock_collection = db['newsletter_locks']
+        # 首先查找数据库中请求的日期（使用美东时间的日期）
+        newsletter = DailyNewsletter.objects(date=date_obj_et.date()).first()
+        if newsletter:
+            logging.info(f"Found newsletter in database for {date} ET")
+            return {
+                'sections': newsletter.sections,
+                'generated_title': newsletter.generated_title
+            }
+            
+        # 如果数据库中没有，尝试从源站获取
+        logging.info(f"Newsletter not found in database, fetching from source for {date} ET")
+        articles = fetch_tldr_content(date)
         
-        # 尝试获取锁
-        lock = {
-            'date': date_obj_et.date(),
-            'created_at': datetime.now(),
-            'expires_at': datetime.now() + timedelta(minutes=5)
-        }
-        
+        if not articles:
+            logging.warning(f"No content available for date: {date} ET, trying to get latest available")
+            latest_newsletter = DailyNewsletter.objects().order_by('-date').first()
+            if latest_newsletter:
+                logging.info(f"Returning latest available newsletter from: {latest_newsletter.date}")
+                # 返回完整的信息，包括 sections 和 generated_title
+                return {
+                    'sections': latest_newsletter.sections,
+                    'generated_title': latest_newsletter.generated_title
+                }
+            return None
+            
+        # 如果获取到了内容，保存到数据库（使用美东时间的日期）
         try:
-            # 使用 unique index 作为锁机制
-            lock_collection.insert_one(lock)
-            
-            # 获取到锁后的处理逻辑
-            newsletter = DailyNewsletter.objects(date=date_obj_et.date()).first()
-            if not newsletter:
-                articles = fetch_tldr_content(date)
-                if articles:
-                    newsletter = DailyNewsletter(
-                        date=date_obj_et.date(),
-                        sections=articles['sections'],
-                        generated_title=articles['generated_title']
-                    )
-                    newsletter.save()
-                    
-            return newsletter
-            
+            if articles:
+                newsletter = DailyNewsletter(
+                    date=date_obj_et.date(),
+                    sections=articles['sections'],
+                    generated_title=articles['generated_title']  # 保存生成的标题
+                )
+                newsletter.save()
+                logging.info(f"Successfully saved newsletter with title to database for {date} ET")
+                return {
+                    'sections': articles['sections'],
+                    'generated_title': articles['generated_title']
+                }
+                
         except Exception as e:
-            # 如果获取锁失败，等待一段时间后重试获取数据
-            time.sleep(1)
-            return DailyNewsletter.objects(date=date_obj_et.date()).first()
-            
-        finally:
-            # 释放锁
-            lock_collection.delete_one({'date': date_obj_et.date()})
+            logging.error(f"Database save error: {str(e)}")
+            if articles:
+                return {
+                    'sections': articles['sections'],
+                    'generated_title': articles['generated_title']
+                }
+            return None
             
     except Exception as e:
         logging.error(f"Error in get_newsletter: {str(e)}")
