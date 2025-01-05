@@ -1,5 +1,5 @@
 # 工作进程数
-workers = 4
+workers = 1
 
 # 每个工作进程的线程数
 threads = 2
