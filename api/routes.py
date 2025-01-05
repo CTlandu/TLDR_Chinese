@@ -79,8 +79,18 @@ def get_newsletter_by_date(date):
             
         # 如果数据库中没有，尝试获取并保存
         articles = get_newsletter(date)
+        
+        # 再次检查数据库，因为 get_newsletter 可能已经保存了数据
+        newsletter = DailyNewsletter.objects(date=date).first()
+        if newsletter:
+            return jsonify({
+                'currentDate': newsletter.date.strftime('%Y-%m-%d'),
+                'sections': newsletter.sections,
+                'generated_title': newsletter.generated_title
+            })
+            
+        # 如果还是没有找到，使用 articles 的数据
         if articles and isinstance(articles, dict) and 'sections' in articles:
-            # 使用最新 newsletter 的所有信息
             return jsonify({
                 'currentDate': articles.get('date', date),
                 'sections': articles['sections'],
@@ -96,7 +106,6 @@ def get_newsletter_by_date(date):
                 'generated_title': latest_newsletter.generated_title
             })
             
-        # 只有在完全没有数据的情况下才返回 404
         return jsonify({'error': 'No newsletter available'}), 404
         
     except Exception as e:
