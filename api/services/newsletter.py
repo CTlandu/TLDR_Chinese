@@ -93,6 +93,7 @@ def get_newsletter(date=None):
         logging.error(f"Error in get_newsletter: {str(e)}")
         return None
 
+@lru_cache(maxsize=32)
 def fetch_tldr_content(date):
     url = f"https://tldr.tech/tech/{date}"
     logging.info(f"Fetching content from: {url}")
