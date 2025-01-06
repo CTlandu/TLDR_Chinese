@@ -157,7 +157,6 @@ export default {
           this.fetchData(newDate);
         }
       },
-      immediate: true,
     },
   },
   mounted() {

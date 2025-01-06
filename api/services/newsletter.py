@@ -49,7 +49,7 @@ def get_newsletter(date=None):
             logging.warning("数据库中没有简报")
             return None
             
-        # 首先查找数据库中请求的日期（使用美东时间的日期）
+        # 查找数据库
         newsletter = DailyNewsletter.objects(date=date_obj_et.date()).first()
         if newsletter:
             logging.info(f"Found newsletter in database for {date} ET")
@@ -58,7 +58,7 @@ def get_newsletter(date=None):
                 'generated_title': newsletter.generated_title
             }
             
-        # 如果数据库中没有，尝试从源站获取
+        # 如果数据库中没有，获取新内容
         logging.info(f"Newsletter not found in database, fetching from source for {date} ET")
         articles = fetch_tldr_content(date)
         
@@ -74,38 +74,33 @@ def get_newsletter(date=None):
                 }
             return None
             
-        # 如果获取到了内容，保存到数据库（使用美东时间的日期）
+        # 保存到数据库并返回结果
         try:
-            if articles:
-                newsletter = DailyNewsletter(
-                    date=date_obj_et.date(),
-                    sections=articles['sections'],
-                    generated_title=articles['generated_title']  # 保存生成的标题
-                )
-                newsletter.save()
-                logging.info(f"Successfully saved newsletter with title to database for {date} ET")
-                return {
-                    'sections': articles['sections'],
-                    'generated_title': articles['generated_title']
-                }
-                
+            newsletter = DailyNewsletter(
+                date=date_obj_et.date(),
+                sections=articles['sections'],
+                generated_title=articles['generated_title']
+            )
+            newsletter.save()
+            logging.info(f"Successfully saved newsletter with title to database for {date} ET")
+            return {
+                'sections': articles['sections'],
+                'generated_title': articles['generated_title']
+            }
+            
         except Exception as e:
             logging.error(f"Database save error: {str(e)}")
-            if articles:
-                return {
-                    'sections': articles['sections'],
-                    'generated_title': articles['generated_title']
-                }
-            return None
+            # 即使保存失败，仍然返回获取到的内容
+            return {
+                'sections': articles['sections'],
+                'generated_title': articles['generated_title']
+            }
             
     except Exception as e:
         logging.error(f"Error in get_newsletter: {str(e)}")
         return None
 
-@lru_cache(maxsize=32)
-def fetch_tldr_content(date, timestamp=None):
-    if timestamp is None:
-        timestamp = time.strftime('%Y%m%d%H')
+def fetch_tldr_content(date):
     url = f"https://tldr.tech/tech/{date}"
     logging.info(f"Fetching content from: {url}")
     
@@ -148,8 +143,15 @@ def fetch_tldr_content(date, timestamp=None):
                     title = title_elem.text.strip()
                     translator = TranslatorService(current_app.config['DEEPSEEK_API_KEY'])
                     
+                    # 修改内容提取逻辑，确保只获取文章内容
                     content = article.find('div', class_='newsletter-html')
-                    content_html = ''.join(str(tag) for tag in content.contents) if content else ""
+                    if content:
+                        # 移除所有的 <a> 标签，只保留文本内容
+                        for a in content.find_all('a'):
+                            a.decompose()
+                        content_html = content.get_text(strip=True)
+                    else:
+                        content_html = ""
                     
                     # 翻译标题和内容
                     title_zh = translator.translate_to_chinese(title)
@@ -175,13 +177,13 @@ def fetch_tldr_content(date, timestamp=None):
                 except Exception as e:
                     logging.error(f"Error processing article: {str(e)}")
                     continue
-            
+                    
             if section_content:
                 articles.append({
                     'section': section_title,
                     'articles': section_content
                 })
-        
+
         if not articles:
             logging.warning("No valid articles found")
             return None
@@ -199,7 +201,18 @@ def fetch_tldr_content(date, timestamp=None):
                 generated_title = title_generator.generate_title(articles)
                 logging.info(f"生成的标题: {generated_title}")
                 
-                # 返回带有标题的文章数据
+                # 在返回之前再次检查数据库
+                try:
+                    newsletter = DailyNewsletter.objects(date=date).first()
+                    if newsletter:
+                        logging.info(f"Another process has saved the newsletter for {date}")
+                        return {
+                            'sections': newsletter.sections,
+                            'generated_title': newsletter.generated_title
+                        }
+                except Exception as e:
+                    logging.error(f"Final database check error: {str(e)}")
+                
                 return {
                     'sections': articles,
                     'generated_title': generated_title
