@@ -210,9 +210,34 @@ def fetch_tldr_content(date):
                             'sections': newsletter.sections,
                             'generated_title': newsletter.generated_title
                         }
+                    
+                    # 如果数据库中还没有，尝试保存
+                    new_newsletter = DailyNewsletter(
+                        date=date,
+                        sections=articles,
+                        generated_title=generated_title
+                    )
+                    try:
+                        new_newsletter.save()
+                        logging.info(f"Successfully saved newsletter with title to database for {date} ET")
+                    except Exception as e:
+                        # 如果是重复键错误，说明另一个进程已经保存了数据
+                        if "E11000 duplicate key error" in str(e):
+                            logging.info(f"Duplicate key detected, another process likely saved the newsletter for {date}")
+                            # 获取已保存的数据
+                            saved_newsletter = DailyNewsletter.objects(date=date).first()
+                            if saved_newsletter:
+                                return {
+                                    'sections': saved_newsletter.sections,
+                                    'generated_title': saved_newsletter.generated_title
+                                }
+                        else:
+                            logging.error(f"Database save error: {str(e)}")
+                    
                 except Exception as e:
                     logging.error(f"Final database check error: {str(e)}")
                 
+                # 即使保存失败，仍然返回生成的内容
                 return {
                     'sections': articles,
                     'generated_title': generated_title
