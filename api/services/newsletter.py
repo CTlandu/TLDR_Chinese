@@ -153,9 +153,9 @@ def fetch_tldr_content(date):
                     else:
                         content_html = ""
                     
-                    # 翻译标题和内容
-                    title_zh = translator.translate_to_chinese(title)
-                    content_html_zh = translator.translate_to_chinese(content_html)
+                    # 分别翻译标题和内容
+                    title_zh = translator.translate_title(title)
+                    content_html_zh = translator.translate_content(content_html)
                     
                     link = article.find('a', class_='font-bold')
                     url = link['href'] if link else ""
