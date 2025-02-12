@@ -2,13 +2,30 @@ import requests
 from bs4 import BeautifulSoup
 import logging
 from urllib.parse import urljoin
+import os
+
+# 确保环境中没有代理设置
+os.environ.pop('HTTPS_PROXY', None)
+os.environ.pop('HTTP_PROXY', None)
 
 def extract_article_image(url):
     """
     从文章URL中提取最相关的图片URL
     """
     try:
-        response = requests.get(url, timeout=10)
+        # 设置请求头
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        # 直接请求，不使用代理
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=10,
+            verify=True
+        )
+        
         if response.status_code != 200:
             return None
             

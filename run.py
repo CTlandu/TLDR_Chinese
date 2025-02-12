@@ -30,7 +30,7 @@ def get_app_config():
         # 验证配置
         logger.info(f"MongoDB URI: {config.MONGODB_SETTINGS['host']}")
         
-        # 测试连接
+        # 测试连接，移除代理相关设置
         client = MongoClient(
             config.MONGODB_SETTINGS['host'],
             serverSelectionTimeoutMS=5000,

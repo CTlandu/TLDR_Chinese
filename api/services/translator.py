@@ -15,6 +15,9 @@ class TranslatorService:
         专门用于翻译标题的方法
         """
         try:
+            # Log original title
+            logging.info(f"开始翻译标题: {title}")
+            
             # 检查是否包含 "minute read" 并标准化翻译
             title = self._standardize_minute_read(title)
             
@@ -40,10 +43,15 @@ class TranslatorService:
                 max_tokens=500
             )
             
-            return response.choices[0].message.content.strip()
+            translated_title = response.choices[0].message.content.strip()
+            # Log translated title
+            logging.info(f"翻译结果: {translated_title}")
+            
+            return translated_title
             
         except Exception as e:
-            logging.error(f"Title translation error: {str(e)}")
+            logging.error(f"标题翻译错误 - 原文: {title}")
+            logging.error(f"错误信息: {str(e)}")
             return title
             
     def translate_content(self, content: str) -> str:
@@ -51,6 +59,10 @@ class TranslatorService:
         专门用于翻译内容的方法
         """
         try:
+            # Log original content (truncated for readability)
+            content_preview = content[:100] + "..." if len(content) > 100 else content
+            logging.info(f"开始翻译内容: {content_preview}")
+            
             response = self.client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
@@ -72,10 +84,16 @@ class TranslatorService:
                 max_tokens=2000
             )
             
-            return response.choices[0].message.content.strip()
+            translated_content = response.choices[0].message.content.strip()
+            # Log translated content (truncated for readability)
+            translated_preview = translated_content[:100] + "..." if len(translated_content) > 100 else translated_content
+            logging.info(f"翻译结果: {translated_preview}")
+            
+            return translated_content
             
         except Exception as e:
-            logging.error(f"Content translation error: {str(e)}")
+            logging.error(f"内容翻译错误 - 原文预览: {content_preview}")
+            logging.error(f"错误信息: {str(e)}")
             return content
     
     def _standardize_minute_read(self, text):
