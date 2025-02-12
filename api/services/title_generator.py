@@ -1,36 +1,15 @@
 import logging
 from typing import List, Dict, Optional
-import os
-import requests
-from tenacity import retry, stop_after_attempt, wait_exponential
+from openai import OpenAI
 
 class TitleGeneratorService:
-    def __init__(self, api_key: str = None, secret_key: str = None):
-        """初始化文心一言服务"""
-        self.api_key = api_key or os.environ.get('ERNIE_API_KEY')
-        self.secret_key = secret_key or os.environ.get('ERNIE_SECRET_KEY')
-        self.access_token = None
-        
-    def _get_access_token(self) -> str:
-        """获取百度智能云 access token"""
-        url = f"https://aip.baidubce.com/oauth/2.0/token"
-        params = {
-            "grant_type": "client_credentials",
-            "client_id": self.api_key,
-            "client_secret": self.secret_key
-        }
-        
-        try:
-            response = requests.post(url, params=params)
-            result = response.json()
-            if 'access_token' in result:
-                return result['access_token']
-            else:
-                raise Exception(f"获取 access token 失败: {result}")
-        except Exception as e:
-            logging.error(f"获取 access token 出错: {str(e)}")
-            raise
-            
+    def __init__(self, api_key: str):
+        """初始化 DeepSeek 服务"""
+        self.client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.deepseek.com"
+        )
+
     def _extract_titles_by_section(self, articles: List[Dict]) -> Dict[str, List[str]]:
         """从各个版块提取中文标题"""
         section_titles = {
@@ -48,15 +27,10 @@ class TitleGeneratorService:
                 
         return section_titles
             
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     def generate_title(self, articles: List[Dict]) -> Optional[str]:
         """根据文章内容生成标题"""
         try:
             logging.info("开始生成标题...")
-            
-            # 如果没有 access token 则获取
-            if not self.access_token:
-                self.access_token = self._get_access_token()
             
             # 提取各个版块的标题
             section_titles = self._extract_titles_by_section(articles)
@@ -97,32 +71,24 @@ class TitleGeneratorService:
             直接返回生成的标题，不要包含任何解释或其他内容。
             """
             
-            # 调用文心一言 API
-            url = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions"
-            headers = {'Content-Type': 'application/json'}
-            params = {'access_token': self.access_token}
-            payload = {
-                'messages': [{'role': 'user', 'content': prompt}],
-                'temperature': 0.7,
-                'top_p': 0.8
-            }
+            # 调用 DeepSeek API
+            response = self.client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "system", "content": "你是一个专业的科技新闻编辑，擅长生成引人注目的新闻标题。"},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=500
+            )
             
-            logging.info("正在调用文心一言 API...")
-            response = requests.post(url, headers=headers, params=params, json=payload)
-            result = response.json()
+            title = response.choices[0].message.content.strip()
+            logging.info(f"生成的标题: {title}")
             
-            if 'result' in result:
-                title = result['result'].strip()
-                logging.info(f"生成的标题: {title}")
+            if len(title) > 65:
+                title = title[:62] + "..."
                 
-
-                
-                if len(title) > 65:
-                    title = title[:62] + "..."
-                    
-                return title
-            else:
-                raise Exception(f"API 调用失败: {result}")
+            return title
             
         except Exception as e:
             logging.error(f"Title generation error: {str(e)}")

@@ -193,8 +193,9 @@ def fetch_tldr_content(date):
             if articles:
                 # 初始化标题生成器
                 title_generator = TitleGeneratorService(
-                    os.environ.get('ERNIE_API_KEY'),
-                    os.environ.get('ERNIE_SECRET_KEY')
+                    os.environ.get('DEEPSEEK_API_KEY')
+                    # os.environ.get('ERNIE_API_KEY'),
+                    # os.environ.get('ERNIE_SECRET_KEY')
                 )
                 
                 # 生成标题

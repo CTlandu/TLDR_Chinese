@@ -91,10 +91,11 @@ def test_multiple_days():
                         })
                 
                 # 生成标题
-                api_key = os.environ.get('ERNIE_API_KEY')
-                secret_key = os.environ.get('ERNIE_SECRET_KEY')
+                api_key = os.environ.get('DEEPSEEK_API_KEY')
+                # api_key = os.environ.get('ERNIE_API_KEY')
+                # secret_key = os.environ.get('ERNIE_SECRET_KEY')
                 
-                if not api_key or not secret_key:
+                if not api_key:
                     logger.error("未找到 API Key 或 Secret Key")
                     return False
                 

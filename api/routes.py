@@ -18,6 +18,7 @@ import requests
 import json
 from io import BytesIO
 import base64
+from .services.title_generator import TitleGeneratorService
 
 bp = Blueprint('main', __name__)
 
