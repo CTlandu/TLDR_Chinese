@@ -64,6 +64,7 @@ Vercel 会自动检测到：
 | `FLASK_ENV` | Flask 环境 | `production` |
 | `FRONTEND_URL` | 前端 URL | `https://your-app.vercel.app` |
 | `BACKEND_URL` | 后端 URL | `https://your-app.vercel.app` |
+| `VITE_API_URL` | 前端 API 地址 | 留空（使用相对路径）或 `https://your-app.vercel.app` |
 
 **注意事项：**
 - `FRONTEND_URL` 和 `BACKEND_URL` 在首次部署时可以先留空，部署完成后再填入实际的 Vercel 域名
