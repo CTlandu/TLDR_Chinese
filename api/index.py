@@ -18,24 +18,9 @@ from api import create_app
 from config import get_config
 
 # 初始化配置和应用
-try:
-    config = get_config()
-    app = create_app(config)
-except Exception as e:
-    import logging
-    logging.error(f"Failed to initialize Flask app: {str(e)}")
-    raise
-
-# Vercel 会调用这个 handler 函数
-# 这是一个标准的 WSGI 应用包装器
-def handler(environ, start_response):
-    """
-    Vercel serverless function handler
-    将请求转发给 Flask 应用
-    """
-    return app(environ, start_response)
+config = get_config()
+app = create_app(config)
 
 # 导出 app 供 Vercel 使用
-# Vercel 可以识别 app 变量作为 WSGI 应用
-__all__ = ['app', 'handler']
+# Vercel Python runtime 会自动识别并包装 Flask app
 
