@@ -69,7 +69,7 @@ def get_available_dates(days=7):
 # Core Website Routes  #
 ########################
 
-@bp.route('/newsletter/<date>')
+@bp.route('/api/newsletter/<date>')
 def get_newsletter_by_date(date):
     try:
         # 先查询指定日期
@@ -117,7 +117,7 @@ def get_newsletter_by_date(date):
         logging.error(f"Error getting newsletter: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/latest-articles')
+@bp.route('/api/latest-articles')
 def get_latest_articles():
     try:
         # 获取数据库中最新的 newsletter 日期
@@ -134,7 +134,7 @@ def get_latest_articles():
         logging.error(f"Error getting latest articles: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/latest-articles-by-section')
+@bp.route('/api/latest-articles-by-section')
 def get_latest_articles_by_section():
     try:
         # 获取所有newsletter，按日期降序排列
@@ -191,7 +191,7 @@ def get_latest_articles_by_section():
 # WeChat Integration   #
 ########################
 
-@bp.route('/wechat/newsletter/<date>')
+@bp.route('/api/wechat/newsletter/<date>')
 def get_wechat_newsletter(date):
     try:
         # 转换为美东时间
@@ -370,7 +370,7 @@ def is_valid_email(email):
     domain = email.split('@')[1]
     return '.' in domain
 
-@bp.route('/subscribe', methods=['POST'])
+@bp.route('/api/subscribe', methods=['POST'])
 @limiter.limit("5 per hour")  # 每小时限制5次订阅请求
 def subscribe():
     try:
@@ -442,7 +442,7 @@ def subscribe():
         return jsonify({'error': '订阅失败，请稍后重试'}), 500
     
     
-@bp.route('/confirm/<token>', methods=['GET'])
+@bp.route('/api/confirm/<token>', methods=['GET'])
 def confirm_subscription(token):
     try:
         subscriber = Subscriber.objects(confirmation_token=token).first()
@@ -473,7 +473,7 @@ def confirm_subscription(token):
         return redirect(f"{frontend_url}/subscription/error")
     
     
-@bp.route('/unsubscribe/<subscriber_id>',methods=['GET'])
+@bp.route('/api/unsubscribe/<subscriber_id>',methods=['GET'])
 def unsubscribe(subscriber_id):
     try:
         # 查找并更新订阅者状态
@@ -501,7 +501,7 @@ def unsubscribe(subscriber_id):
 # Email Service Routes #
 ########################
 
-@bp.route('/test/send_newsletter', methods=['POST'])
+@bp.route('/api/test/send_newsletter', methods=['POST'])
 def test_send_newsletter():
     try:
         latest_newsletter = DailyNewsletter.objects.order_by('-date').first()
@@ -538,7 +538,7 @@ def test_send_newsletter():
         return jsonify({'error': str(e)}), 500
     
     
-@bp.route('/send_daily_newsletter', methods=['POST'])
+@bp.route('/api/send_daily_newsletter', methods=['POST'])
 def send_daily_newsletter_api():
     try:
         # 验证请求（可以添加 API key 验证）
@@ -591,7 +591,7 @@ def send_daily_newsletter_api():
     
 ########################
 # Miscellaneous Routes #
-@bp.route('/subscriber-count', methods=['GET'])
+@bp.route('/api/subscriber-count', methods=['GET'])
 def get_subscriber_count():
     try:
         # 获取已确认的订阅者数量
@@ -612,7 +612,7 @@ def get_subscriber_count():
         }), 500
     
     
-@bp.route('/featured-news', methods=['GET'])
+@bp.route('/api/featured-news', methods=['GET'])
 def get_featured_news():
     try:
         # 获取最近的几期 newsletter（多获取几期以便筛选有图片的文章）
