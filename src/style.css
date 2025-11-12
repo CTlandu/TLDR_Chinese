@@ -1,3 +1,182 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ==========================================
+   可访问性设置 - 字体大小
+   ========================================== */
+
+/* 默认字体大小（中号） */
+:root {
+  --base-font-size: 1rem;
+  --heading-multiplier: 1;
+}
+
+/* 小号字体 */
+:root[data-font-size='small'] {
+  --base-font-size: 0.875rem; /* 14px */
+  --heading-multiplier: 0.9;
+}
+
+/* 中号字体（默认） */
+:root[data-font-size='medium'] {
+  --base-font-size: 1rem; /* 16px */
+  --heading-multiplier: 1;
+}
+
+/* 大号字体 */
+:root[data-font-size='large'] {
+  --base-font-size: 1.125rem; /* 18px */
+  --heading-multiplier: 1.1;
+}
+
+/* 应用字体大小到主要内容区域（不包括导航栏） */
+main,
+.card,
+.card-body,
+section,
+article,
+p,
+li,
+.text-base,
+.text-sm,
+.text-xs,
+.text-lg,
+.text-xl,
+.text-2xl,
+.text-3xl {
+  font-size: var(--base-font-size) !important;
+}
+
+/* 标题字体缩放 */
+main h1,
+section h1 {
+  font-size: calc(2.25rem * var(--heading-multiplier)) !important;
+}
+
+main h2,
+section h2 {
+  font-size: calc(1.875rem * var(--heading-multiplier)) !important;
+}
+
+main h3,
+section h3 {
+  font-size: calc(1.5rem * var(--heading-multiplier)) !important;
+}
+
+/* ==========================================
+   可访问性设置 - 色盲模式
+   ========================================== */
+
+/* 标准模式（默认） - 使用 DaisyUI 默认主题色 */
+:root[data-color-mode='normal'] {
+  /* 保持默认颜色 */
+}
+
+/* 高对比度模式 */
+:root[data-color-mode='high-contrast'] {
+  --primary-color: #0066ff;
+  --secondary-color: #ff6600;
+  --bg-color: #000000;
+  --text-color: #ffffff;
+  --border-color: #ffffff;
+}
+
+:root[data-color-mode='high-contrast'] body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+:root[data-color-mode='high-contrast'] .bg-base-100,
+:root[data-color-mode='high-contrast'] .bg-base-200,
+:root[data-color-mode='high-contrast'] .bg-base-300 {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+:root[data-color-mode='high-contrast'] .card {
+  background-color: #0a0a0a !important;
+  border: 2px solid #ffffff !important;
+  color: #ffffff !important;
+}
+
+:root[data-color-mode='high-contrast'] .btn-primary {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+:root[data-color-mode='high-contrast'] .text-primary {
+  color: #00aaff !important;
+}
+
+:root[data-color-mode='high-contrast'] .navbar {
+  background-color: #000000 !important;
+  border-bottom: 2px solid #ffffff !important;
+}
+
+/* 色盲友好模式（使用蓝色/黄色配色方案，避免红绿） */
+:root[data-color-mode='color-blind-friendly'] {
+  --primary-color: #0077be; /* 蓝色 */
+  --secondary-color: #f59e00; /* 黄色 */
+  --success-color: #0077be; /* 蓝色代替绿色 */
+  --error-color: #d45500; /* 橙色代替红色 */
+  --warning-color: #f59e00; /* 黄色 */
+}
+
+:root[data-color-mode='color-blind-friendly'] .btn-primary {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+:root[data-color-mode='color-blind-friendly'] .text-primary {
+  color: var(--primary-color) !important;
+}
+
+:root[data-color-mode='color-blind-friendly'] .text-success,
+:root[data-color-mode='color-blind-friendly'] .alert-success {
+  color: var(--success-color) !important;
+  background-color: rgba(0, 119, 190, 0.1) !important;
+}
+
+:root[data-color-mode='color-blind-friendly'] .text-error,
+:root[data-color-mode='color-blind-friendly'] .alert-error {
+  color: var(--error-color) !important;
+  background-color: rgba(212, 85, 0, 0.1) !important;
+}
+
+:root[data-color-mode='color-blind-friendly'] .text-warning,
+:root[data-color-mode='color-blind-friendly'] .alert-warning {
+  color: var(--warning-color) !important;
+  background-color: rgba(245, 158, 0, 0.1) !important;
+}
+
+/* 确保链接在色盲模式下清晰可见 */
+:root[data-color-mode='color-blind-friendly'] a {
+  color: var(--primary-color) !important;
+  text-decoration: underline;
+}
+
+:root[data-color-mode='color-blind-friendly'] a:hover {
+  color: var(--secondary-color) !important;
+}
+
+/* ==========================================
+   平滑过渡效果
+   ========================================== */
+html,
+body,
+main,
+.card,
+.btn,
+p,
+h1,
+h2,
+h3 {
+  transition:
+    font-size 0.3s ease,
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
+}
