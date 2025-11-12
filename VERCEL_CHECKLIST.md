@@ -28,11 +28,18 @@ BACKEND_URL=https://tldr-chinese.vercel.app（部署后填）
 
 ### 2️⃣ Functions 检查
 
-进入 **Deployments → 最新部署 → Functions** 标签：
+**如何查看：**
+1. Vercel Dashboard → 选择项目
+2. 点击顶部 **"Deployments"** 标签
+3. 点击最新的部署记录
+4. 点击 **"Functions"** 标签
 
+**检查结果：**
 ✅ 应该看到：`api/index.py` 
 - 如果看到了 → 说明 API 已部署 ✅
-- 如果看不到 → API 没有部署，需要修复 ❌
+- 如果看不到或没有 Functions 标签 → API 没有部署，需要修复 ❌
+
+**快速测试：** 直接访问 `https://你的域名.vercel.app/api/subscriber-count`，应该返回 JSON 数据
 
 ### 3️⃣ 构建日志检查
 
