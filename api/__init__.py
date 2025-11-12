@@ -18,22 +18,31 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config['JSON_AS_ASCII'] = False  # 添加这行
     
-    # 允许所有来源的 CORS 请求
+    # 动态 CORS 配置 - 允许 Vercel 的所有域名
+    from flask import request
+    
+    def cors_origin_handler(origin, *args, **kwargs):
+        """动态处理 CORS origin"""
+        allowed_patterns = [
+            'localhost',
+            'vercel.app',
+            'tldrnewsletter.cn',
+            'onrender.com'
+        ]
+        
+        if origin:
+            for pattern in allowed_patterns:
+                if pattern in origin:
+                    return True
+        return False
+    
     CORS(app, resources={
         r"/api/*": {
-            "origins": [
-                "http://localhost:5173", 
-                "https://tldr-chinese-frontend.onrender.com",
-                "https://tldr-chinese-backend.onrender.com",
-                "https://www.tldrnewsletter.cn",
-                "https://tldrnewsletter.cn",
-                "http://www.tldrnewsletter.cn",
-                "http://tldrnewsletter.cn"
-            ],
+            "origins": cors_origin_handler,
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
             "expose_headers": ["Content-Range", "X-Content-Range"],
-            "supports_credentials": True,
+            "supports_credentials": False,
             "max_age": 600
         }
     })

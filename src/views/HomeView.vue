@@ -300,7 +300,7 @@ export default {
   methods: {
     async fetchSubscriberCount() {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const API_URL = import.meta.env.VITE_API_URL || '';
         const response = await axios.get(`${API_URL}/api/subscriber-count`);
         if (response.data.success) {
           this.subscriberCount = response.data.count;
@@ -324,8 +324,7 @@ export default {
         this.error = false;
 
         try {
-          const API_URL =
-            import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const API_URL = import.meta.env.VITE_API_URL || '';
           const response = await axios.post(`${API_URL}/api/subscribe`, {
             email: this.email.toLowerCase().trim(),
           });
@@ -412,7 +411,7 @@ export default {
 
     async fetchFeaturedNews() {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const API_URL = import.meta.env.VITE_API_URL || '';
         const response = await axios.get(`${API_URL}/api/featured-news`);
         if (response.data.success) {
           this.featuredNews = response.data.featuredNews;

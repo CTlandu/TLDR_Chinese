@@ -87,10 +87,8 @@ export default {
   },
   async mounted() {
     try {
-      const API_URL =
-        window.location.hostname === 'localhost'
-          ? 'http://localhost:5000'
-          : 'https://tldr-chinese-backend.onrender.com';
+      // 使用相对路径，Vercel 会自动路由到后端
+      const API_URL = import.meta.env.VITE_API_URL || '';
 
       const response = await axios.get(
         `${API_URL}/api/latest-articles-by-section`

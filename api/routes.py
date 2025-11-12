@@ -29,21 +29,25 @@ bp = Blueprint('main', __name__)
 @bp.after_request
 def after_request(response):
     origin = request.headers.get('Origin')
-    allowed_origins = [
-        'https://www.tldrnewsletter.cn',
-        'http://localhost:5173',  # 添加本地开发环境
-        'http://localhost:3000',
-        'https://tldrnewsletter.cn',
-        'https://tldr-chinese-frontend.onrender.com',
-        'https://tldr-chinese-backend.onrender.com',
-        # 如果你使用其他端口也可以添加
+    
+    # 动态允许的域名模式
+    allowed_patterns = [
+        'localhost',
+        'vercel.app',  # 允许所有 Vercel 域名（包括预览部署）
+        'tldrnewsletter.cn',
+        'onrender.com'
     ]
     
-    if origin in allowed_origins:
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'false')
+    # 检查 origin 是否匹配允许的模式
+    if origin:
+        for pattern in allowed_patterns:
+            if pattern in origin:
+                response.headers.add('Access-Control-Allow-Origin', origin)
+                response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept')
+                response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+                response.headers.add('Access-Control-Allow-Credentials', 'false')
+                break
+    
     return response
 
 ########################

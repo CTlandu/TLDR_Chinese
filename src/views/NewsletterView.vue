@@ -117,10 +117,8 @@ export default {
     async fetchData(date) {
       this.loading = true;
       try {
-        const API_URL =
-          window.location.hostname === 'localhost'
-            ? 'http://localhost:5000'
-            : 'https://tldr-chinese-backend.onrender.com';
+        // 使用相对路径，Vercel 会自动路由到后端
+        const API_URL = import.meta.env.VITE_API_URL || '';
 
         const dateParam = date || this.$route.params.date || 'latest';
         const response = await axios.get(
