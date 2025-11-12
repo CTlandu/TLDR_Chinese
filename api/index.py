@@ -21,6 +21,5 @@ from config import get_config
 config = get_config()
 app = create_app(config)
 
-# 导出 app 供 Vercel 使用
-# Vercel Python runtime 会自动将 Flask app 包装为 WSGI handler
+# Vercel 会自动识别并使用这个 WSGI app
 
