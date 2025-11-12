@@ -3,6 +3,7 @@ import App from './App.vue';
 import router from './router';
 import { createI18n } from 'vue-i18n';
 import './style.css';
+import { inject } from '@vercel/analytics';
 
 const messages = {
   zh: {
@@ -37,3 +38,6 @@ const app = createApp(App);
 app.use(router);
 app.use(i18n);
 app.mount('#app');
+
+// 初始化 Vercel Analytics
+inject();
