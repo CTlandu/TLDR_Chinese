@@ -1,20 +1,23 @@
 <template>
   <div class="navbar bg-base-200">
-    <div class="flex-1 flex items-center gap-2 pl-4">
-      <router-link to="/" class="flex items-center gap-2">
-        <img src="../../assets/logo-3.png" alt="TLDR Logo" class="h-8 w-8" />
-        <span class="rainbow-text font-bold text-xl">太长不看</span>
-      </router-link>
-      <div class="divider divider-horizontal mx-2"></div>
-      <router-link :to="`/newsletter/${today}`" class="btn btn-ghost">
-        今日新闻
-      </router-link>
-      <span class="text-base-content/60">广告投放</span>
-    </div>
+    <!-- 内容容器，与页面内容宽度一致 -->
+    <div class="max-w-4xl mx-auto px-4 w-full flex items-center justify-between">
+      <!-- 左侧导航 -->
+      <div class="flex items-center gap-2">
+        <router-link to="/" class="flex items-center gap-2">
+          <img src="../../assets/logo-3.png" alt="TLDR Logo" class="h-8 w-8" />
+          <span class="rainbow-text font-bold text-xl">太长不看</span>
+        </router-link>
+        <div class="divider divider-horizontal mx-2"></div>
+        <router-link :to="`/newsletter/${today}`" class="btn btn-ghost">
+          今日新闻
+        </router-link>
+        <span class="text-base-content/60">广告投放</span>
+      </div>
 
-    <!-- 可访问性设置按钮 -->
-    <div class="flex-none pr-4">
-      <div class="dropdown dropdown-end">
+      <!-- 右侧可访问性设置按钮 -->
+      <div class="flex-none">
+        <div class="dropdown dropdown-end">
         <label tabindex="0" class="btn btn-ghost btn-circle" title="可访问性设置">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -125,6 +128,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>
