@@ -41,7 +41,7 @@
         </label>
         <div
           tabindex="0"
-          class="dropdown-content menu p-4 shadow-lg bg-base-100 rounded-box w-72 mt-3 border border-base-300"
+          class="dropdown-content menu p-4 shadow-lg bg-base-100 rounded-box w-72 mt-3 border border-base-300 z-50"
         >
           <h3 class="font-bold text-lg mb-3 px-2">可访问性设置</h3>
 
