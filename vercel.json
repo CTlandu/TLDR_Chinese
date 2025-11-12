@@ -2,7 +2,8 @@
   "rewrites": [
     { "source": "/api/hello", "destination": "/api/hello" },
     { "source": "/api/test", "destination": "/api/test" },
-    { "source": "/api/(.*)", "destination": "/api/index" }
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
 
