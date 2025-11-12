@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
     "axios": "^1.7.7",
     "daisyui": "^4.12.14",
     "vue": "^3.5.12",
@@ -20,11 +21,11 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.1.4",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^7.0.3",
     "postcss": "^8.4.47",
     "prettier": "^3.3.3",
     "tailwindcss": "^3.4.14",
-    "vite": "^5.4.10",
-    "cross-env": "^7.0.3"
+    "vite": "^5.4.10"
   },
   "engines": {
     "node": ">=18"

@@ -139,7 +139,7 @@
             >
               <figure class="h-48">
                 <img
-                  :src="featuredNews.company?.image || '/placeholder.jpg'"
+                  :src="featuredNews.company?.image || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect width=%22400%22 height=%22300%22 fill=%22%23f3f4f6%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial, sans-serif%22 font-size=%2216%22 fill=%22%239ca3af%22%3E暂无图片%3C/text%3E%3C/svg%3E'"
                   :alt="featuredNews.company?.title"
                   class="w-full h-full object-cover"
                   @error="handleImageError($event, 'company')"
@@ -175,7 +175,7 @@
             >
               <figure class="h-48">
                 <img
-                  :src="featuredNews.headlines?.image || '/placeholder.jpg'"
+                  :src="featuredNews.headlines?.image || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect width=%22400%22 height=%22300%22 fill=%22%23f3f4f6%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial, sans-serif%22 font-size=%2216%22 fill=%22%239ca3af%22%3E暂无图片%3C/text%3E%3C/svg%3E'"
                   :alt="featuredNews.headlines?.title"
                   class="w-full h-full object-cover"
                   @error="handleImageError($event, 'headlines')"
@@ -211,7 +211,7 @@
             >
               <figure class="h-48">
                 <img
-                  :src="featuredNews.future?.image || '/placeholder.jpg'"
+                  :src="featuredNews.future?.image || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect width=%22400%22 height=%22300%22 fill=%22%23f3f4f6%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial, sans-serif%22 font-size=%2216%22 fill=%22%239ca3af%22%3E暂无图片%3C/text%3E%3C/svg%3E'"
                   :alt="featuredNews.future?.title"
                   class="w-full h-full object-cover"
                   @error="handleImageError($event, 'future')"
@@ -419,6 +419,13 @@ export default {
       } catch (error) {
         console.error('Error fetching featured news:', error);
       }
+    },
+
+    handleImageError(event, category) {
+      // 当图片加载失败时，使用一个透明的 placeholder
+      // 使用 1x1 透明 PNG 的 base64 编码
+      event.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="%239ca3af"%3E图片加载失败%3C/text%3E%3C/svg%3E';
+      console.log(`Image load error for ${category}:`, event.target.alt);
     },
   },
   watch: {
