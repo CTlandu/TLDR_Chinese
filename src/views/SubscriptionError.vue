@@ -17,11 +17,18 @@
 <script>
 import Navbar from '../components/Navbar.vue';
 import { useRouter } from 'vue-router';
+import { useHead } from '@unhead/vue';
 
 export default {
   name: 'SubscriptionError',
   components: {
     Navbar,
+  },
+  setup() {
+    useHead({
+      title: '订阅确认失败 | 太长不看',
+      meta: [{ name: 'robots', content: 'noindex, nofollow' }],
+    });
   },
   data() {
     return {

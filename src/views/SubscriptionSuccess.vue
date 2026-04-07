@@ -17,11 +17,18 @@
 <script>
 import Navbar from '../components/Navbar.vue';
 import { useRouter } from 'vue-router';
+import { useHead } from '@unhead/vue';
 
 export default {
   name: 'SubscriptionSuccess',
   components: {
     Navbar,
+  },
+  setup() {
+    useHead({
+      title: '订阅确认成功 | 太长不看',
+      meta: [{ name: 'robots', content: 'noindex, nofollow' }],
+    });
   },
   data() {
     return {

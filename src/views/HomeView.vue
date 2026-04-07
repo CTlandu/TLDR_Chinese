@@ -239,6 +239,63 @@
       </div>
 
       <LatestArticles />
+
+      <!-- FAQ Section (SEO + GEO) -->
+      <div class="max-w-4xl mx-auto px-4 py-8">
+        <h2 class="text-2xl font-bold mb-6 text-center">常见问题</h2>
+        <div class="space-y-4">
+          <div class="collapse collapse-arrow bg-base-200">
+            <input type="radio" name="faq-accordion" checked="checked" />
+            <div class="collapse-title text-lg font-medium">
+              「太长不看」是什么？
+            </div>
+            <div class="collapse-content">
+              <p>
+                「太长不看」是一个每日科技新闻中文速递平台，灵感来自英文 TLDR
+                Newsletter。我们每天精选全球科技领域最重要的新闻，翻译成中文并提供简明摘要，帮助中文读者快速了解科技行业动态。内容涵盖
+                AI 人工智能、编程开发、创业投资、前沿科技等领域。
+              </p>
+            </div>
+          </div>
+          <div class="collapse collapse-arrow bg-base-200">
+            <input type="radio" name="faq-accordion" />
+            <div class="collapse-title text-lg font-medium">
+              多久更新一次？
+            </div>
+            <div class="collapse-content">
+              <p>
+                我们每个工作日更新一期，通常在北京时间上午发布。每期包含
+                15-20
+                条精选科技新闻，分为科技公司动态、编程与数据科学、前沿科技、科技要闻等多个板块。
+              </p>
+            </div>
+          </div>
+          <div class="collapse collapse-arrow bg-base-200">
+            <input type="radio" name="faq-accordion" />
+            <div class="collapse-title text-lg font-medium">
+              如何订阅每日邮件？
+            </div>
+            <div class="collapse-content">
+              <p>
+                在页面顶部输入您的邮箱地址并点击「订阅」按钮即可。订阅完全免费，我们会在每个工作日将最新的科技新闻摘要发送到您的邮箱。您也可以关注我们的微信公众号获取每日推送。
+              </p>
+            </div>
+          </div>
+          <div class="collapse collapse-arrow bg-base-200">
+            <input type="radio" name="faq-accordion" />
+            <div class="collapse-title text-lg font-medium">
+              内容来源是什么？
+            </div>
+            <div class="collapse-content">
+              <p>
+                我们的内容来源于全球主流科技媒体和行业报道，包括 TechCrunch、The
+                Verge、Ars Technica
+                等权威来源。我们的编辑团队会筛选最有价值的新闻进行翻译和摘要整理，确保读者能在最短时间内获取最重要的信息。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- 添加 Footer -->
@@ -251,6 +308,7 @@ import Navbar from '../components/Navbar.vue';
 import Footer from '../components/Footer.vue';
 import LatestArticles from '../components/LatestArticles.vue';
 import axios from 'axios';
+import { useHead } from '@unhead/vue';
 
 export default {
   name: 'HomeView',
@@ -258,6 +316,73 @@ export default {
     Navbar,
     LatestArticles,
     Footer,
+  },
+  setup() {
+    useHead({
+      title: '太长不看 - 每日科技新闻中文速递',
+      meta: [
+        {
+          name: 'description',
+          content:
+            '每天5分钟掌握全球科技脉搏。太长不看精选并翻译全球科技新闻，涵盖AI、编程、创业、科学等领域。免费订阅每日邮件，用中文读懂全球科技圈。',
+        },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:title', content: '太长不看 - 每日科技新闻中文速递' },
+        {
+          property: 'og:description',
+          content:
+            '每天5分钟掌握全球科技脉搏。精选并翻译全球科技新闻，涵盖AI、编程、创业、科学等领域。',
+        },
+        {
+          property: 'og:url',
+          content: 'https://tldrnewsletter.cn/',
+        },
+      ],
+      link: [{ rel: 'canonical', href: 'https://tldrnewsletter.cn/' }],
+      script: [
+        {
+          type: 'application/ld+json',
+          innerHTML: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+              {
+                '@type': 'Question',
+                name: '「太长不看」是什么？',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: '「太长不看」是一个每日科技新闻中文速递平台，灵感来自英文 TLDR Newsletter。我们每天精选全球科技领域最重要的新闻，翻译成中文并提供简明摘要，帮助中文读者快速了解科技行业动态。',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: '多久更新一次？',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: '每个工作日更新一期，通常在北京时间上午发布。每期包含15-20条精选科技新闻，分为科技公司动态、编程与数据科学、前沿科技、科技要闻等多个板块。',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: '如何订阅每日邮件？',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: '在页面顶部输入邮箱地址并点击「订阅」按钮即可。订阅完全免费，每个工作日会将最新的科技新闻摘要发送到您的邮箱。',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: '内容来源是什么？',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: '内容来源于全球主流科技媒体和行业报道，包括 TechCrunch、The Verge、Ars Technica 等权威来源。编辑团队筛选最有价值的新闻进行翻译和摘要整理。',
+                },
+              },
+            ],
+          }),
+        },
+      ],
+    });
   },
   data() {
     return {

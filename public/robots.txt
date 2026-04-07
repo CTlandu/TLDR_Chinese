@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+Allow: /newsletter/
+Disallow: /subscription/
+Disallow: /unsubscribed
+Disallow: /api/
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+Sitemap: https://tldrnewsletter.cn/api/sitemap.xml

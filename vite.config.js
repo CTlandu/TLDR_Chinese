@@ -8,7 +8,7 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     cssCodeSplit: true,
-    sourcemap: true,
+    sourcemap: false,
   },
   css: {
     postcss: './postcss.config.cjs',

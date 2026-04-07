@@ -36,7 +36,15 @@
 </template>
 
 <script>
+import { useHead } from '@unhead/vue';
+
 export default {
   name: 'UnsubscribedView',
+  setup() {
+    useHead({
+      title: '取消订阅成功 | 太长不看',
+      meta: [{ name: 'robots', content: 'noindex, nofollow' }],
+    });
+  },
 };
 </script>

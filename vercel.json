@@ -1,4 +1,33 @@
 {
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/og-image.png",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/api/hello", "destination": "/api/hello" },
     { "source": "/api/test", "destination": "/api/test" },
@@ -6,4 +35,3 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
-

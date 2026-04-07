@@ -11,3 +11,17 @@
     </div>
   </div>
 </template>
+
+<script>
+import { useHead } from '@unhead/vue';
+
+export default {
+  name: 'NotFound',
+  setup() {
+    useHead({
+      title: '页面不存在 | 太长不看',
+      meta: [{ name: 'robots', content: 'noindex, nofollow' }],
+    });
+  },
+};
+</script>

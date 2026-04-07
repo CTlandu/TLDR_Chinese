@@ -1,36 +1,90 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="zh-CN" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      http-equiv="Cache-Control"
-      content="no-cache, no-store, must-revalidate"
-    />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <title>太长不看-科技日报</title>
+
+    <title>太长不看 - 每日科技新闻中文速递</title>
     <meta
       name="description"
-      content="5 分钟掌握 全球科技脉搏，尽在 太长不看。
-    免费 订阅每日邮件，获取最新科技资讯。
-    获取创业、科技和编程领域最有趣的新闻摘要！"
+      content="每天5分钟掌握全球科技脉搏。太长不看精选并翻译全球科技新闻，涵盖AI、编程、创业、科学等领域。免费订阅每日邮件，用中文读懂全球科技圈。"
     />
-    <meta name="keywords" content="科技日报, 科技新闻, 科技资讯, AI, 编程" />
-    <meta property="og:title" content="太长不看-科技日报" />
     <meta
-      property="og:description"
-      content="5 分钟掌握 全球科技脉搏，尽在 太长不看。
-    免费 订阅每日邮件，获取最新科技资讯。
-    获取创业、科技和编程领域最有趣的新闻摘要！"
+      name="keywords"
+      content="科技日报, 科技新闻, 科技资讯, AI新闻, 编程, 创业, 人工智能, 每日科技, TLDR中文版"
     />
-    <meta property="og:image" content="/assets/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index, follow" />
     <meta http-equiv="content-language" content="zh-CN" />
 
-    <!-- for DataFa.st tracking usage -->
+    <!-- Canonical -->
+    <link rel="canonical" href="https://tldrnewsletter.cn/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="太长不看" />
+    <meta property="og:title" content="太长不看 - 每日科技新闻中文速递" />
+    <meta
+      property="og:description"
+      content="每天5分钟掌握全球科技脉搏。精选并翻译全球科技新闻，涵盖AI、编程、创业、科学等领域。"
+    />
+    <meta
+      property="og:image"
+      content="https://tldrnewsletter.cn/og-image.png"
+    />
+    <meta property="og:url" content="https://tldrnewsletter.cn/" />
+    <meta property="og:locale" content="zh_CN" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="太长不看 - 每日科技新闻中文速递" />
+    <meta
+      name="twitter:description"
+      content="每天5分钟掌握全球科技脉搏。精选并翻译全球科技新闻，涵盖AI、编程、创业、科学等领域。"
+    />
+    <meta
+      name="twitter:image"
+      content="https://tldrnewsletter.cn/og-image.png"
+    />
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://datafa.st" crossorigin />
+    <link rel="dns-prefetch" href="https://datafa.st" />
+
+    <!-- Structured Data: WebSite + Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://tldrnewsletter.cn/#website",
+            "url": "https://tldrnewsletter.cn/",
+            "name": "太长不看",
+            "alternateName": "TLDR Chinese",
+            "description": "每天5分钟掌握全球科技脉搏，用中文读懂全球科技圈",
+            "inLanguage": "zh-CN",
+            "potentialAction": {
+              "@type": "ReadAction",
+              "target": "https://tldrnewsletter.cn/newsletter/latest"
+            }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://tldrnewsletter.cn/#organization",
+            "name": "太长不看",
+            "url": "https://tldrnewsletter.cn/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://tldrnewsletter.cn/og-image.png"
+            }
+          }
+        ]
+      }
+    </script>
+
+    <!-- DataFa.st tracking -->
     <script
       defer
       data-website-id="677248aa14d2e904484d3433"
@@ -41,6 +95,11 @@
 
   <body>
     <div id="app"></div>
+    <noscript>
+      <h1>太长不看 - 每日科技新闻中文速递</h1>
+      <p>每天5分钟，用中文读懂全球科技圈。精选并翻译全球科技新闻，涵盖AI、编程、创业、科学等领域。</p>
+      <p>请启用 JavaScript 以获得完整体验。</p>
+    </noscript>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

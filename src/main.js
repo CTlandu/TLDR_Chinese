@@ -1,4 +1,5 @@
 import { createApp } from 'vue';
+import { createHeadCore } from '@unhead/vue';
 import App from './App.vue';
 import router from './router';
 import { createI18n } from 'vue-i18n';
@@ -34,7 +35,10 @@ const i18n = createI18n({
   messages,
 });
 
+const head = createHeadCore();
+
 const app = createApp(App);
+app.use(head);
 app.use(router);
 app.use(i18n);
 app.mount('#app');

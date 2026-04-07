@@ -80,7 +80,9 @@ def get_newsletter_by_date(date):
                 'sections': newsletter.sections,
                 'generated_title': newsletter.generated_title
             }
-            return jsonify(response_data)
+            resp = jsonify(response_data)
+            resp.headers['Cache-Control'] = 'public, max-age=3600, stale-while-revalidate=86400'
+            return resp
             
         # 如果数据库中没有，尝试获取并保存
         articles = get_newsletter(date)
@@ -688,6 +690,53 @@ def get_featured_news():
             'error': str(e),
             'success': False
         }), 500
-    
-    
-    
+
+
+########################
+# SEO Routes           #
+########################
+
+@bp.route('/api/sitemap.xml')
+def sitemap():
+    try:
+        base_url = 'https://tldrnewsletter.cn'
+        newsletters = DailyNewsletter.objects().order_by('-date').only('date')
+
+        urls = []
+        # Homepage
+        urls.append(
+            f'  <url>\n'
+            f'    <loc>{base_url}/</loc>\n'
+            f'    <changefreq>daily</changefreq>\n'
+            f'    <priority>1.0</priority>\n'
+            f'  </url>'
+        )
+
+        # Newsletter pages
+        for nl in newsletters:
+            date_str = nl.date.strftime('%Y-%m-%d')
+            urls.append(
+                f'  <url>\n'
+                f'    <loc>{base_url}/newsletter/{date_str}</loc>\n'
+                f'    <lastmod>{date_str}</lastmod>\n'
+                f'    <changefreq>never</changefreq>\n'
+                f'    <priority>0.8</priority>\n'
+                f'  </url>'
+            )
+
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            + '\n'.join(urls) +
+            '\n</urlset>'
+        )
+
+        response = make_response(xml)
+        response.headers['Content-Type'] = 'application/xml'
+        response.headers['Cache-Control'] = 'public, max-age=3600'
+        return response
+
+    except Exception as e:
+        logging.error(f"Error generating sitemap: {str(e)}")
+        return make_response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'), 500
+
