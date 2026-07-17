@@ -175,7 +175,8 @@ def get_latest_articles_by_section():
                     for article in section['articles']:
                         if article.get('image_url') and len(sections_to_show[section_name]) < 5:
                             processed_article = {
-                                'title': get_title_emoji(clean_reading_time(article['title'])),
+                                'title': clean_reading_time(article['title']),
+                                'title_en': article.get('title_en', ''),
                                 'content': article['content'],
                                 'url': article['url'],
                                 'image_url': article['image_url'],

@@ -1,54 +1,37 @@
 <template>
-  <nav class="bg-white p-6 mb-8 rounded-xl shadow-lg">
-    <ul class="flex flex-wrap gap-4 justify-center items-center">
-      <li>
-        <button
-          @click="$emit('navigate', today)"
-          class="px-5 py-2.5 rounded-lg font-medium transition-all duration-300 bg-green-400 text-gray-600 hover:bg-gray-100 hover:-translate-y-0.5"
-        >
-          今日新闻
-        </button>
-      </li>
-      <li>
-        <button
-          @click="$emit('navigate', yesterday)"
-          class="px-5 py-2.5 mr-10 rounded-lg font-medium transition-all duration-300 bg-blue-400 text-gray-600 hover:bg-gray-100 hover:-translate-y-0.5"
-        >
-          昨日新闻
-        </button>
-      </li>
-      <li v-for="date in adjustedDates" :key="date">
-        <button
-          @click="$emit('navigate', date)"
-          :class="[
-            'px-5 py-2.5 rounded-lg font-medium transition-all duration-300',
-            'hover:bg-gray-100 hover:-translate-y-0.5',
-            date === currentDate
-              ? 'bg-blue-300 text-white shadow-md shadow-blue-300'
-              : 'bg-gray-50 text-gray-600',
-          ]"
-        >
-          {{ date }}
-        </button>
-      </li>
-    </ul>
+  <nav aria-label="往期存档" class="mb-6 sm:mb-8">
+    <div class="flex items-center gap-2 overflow-x-auto pb-1">
+      <span class="shrink-0 pr-1 text-xs font-semibold text-base-content/40">
+        往期
+      </span>
+      <router-link
+        v-for="date in dates"
+        :key="date"
+        :to="`/newsletter/${date}`"
+        :class="[
+          'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+          date === currentDate
+            ? 'bg-primary text-white'
+            : 'border border-white/10 bg-base-200 text-base-content/70 hover:border-white/20 hover:text-base-content',
+        ]"
+      >
+        {{ date.slice(5) }}
+      </router-link>
+    </div>
   </nav>
 </template>
 
 <script>
 export default {
+  name: 'DateSelector',
   props: {
-    currentDate: String,
-    adjustedDates: Array,
-  },
-  computed: {
-    today() {
-      return new Date().toISOString().split('T')[0];
+    dates: {
+      type: Array,
+      default: () => [],
     },
-    yesterday() {
-      const date = new Date();
-      date.setDate(date.getDate() - 1);
-      return date.toISOString().split('T')[0];
+    currentDate: {
+      type: String,
+      default: '',
     },
   },
 };

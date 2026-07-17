@@ -105,6 +105,18 @@ curl http://localhost:5000/api/subscriber-count
 VITE_API_URL=http://localhost:5000
 ```
 
+#### ⚠️ 连生产 API 调试时，域名必须用 `https://tldrnewsletter.cn`（不带 www）
+
+如果本地前端要连生产后端调试，`VITE_API_URL` 必须用 **`https://tldrnewsletter.cn`**，不能用 `https://www.tldrnewsletter.cn`：
+
+- `www.tldrnewsletter.cn` 是 Vercel 域名层的 **307 重定向**，重定向响应本身不带 CORS 头，浏览器在预检/跨域请求阶段就会拦截，`/api/*` 请求会全部失败。
+- `tldrnewsletter.cn`（apex 域名）直接命中后端，返回正确的 `Access-Control-Allow-Origin`，`localhost` 才能正常拿到数据。
+
+完整启动命令：
+```bash
+VITE_API_URL=https://tldrnewsletter.cn npm run dev
+```
+
 **或者使用相对路径（需要配置代理）：**
 
 在 `vite.config.js` 中添加代理配置：

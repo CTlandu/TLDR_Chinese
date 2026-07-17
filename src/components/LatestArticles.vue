@@ -1,125 +1,118 @@
 <template>
-  <section class="max-w-4xl mx-auto py-10">
-    <div class="container mx-auto px-4">
-      <h2 class="text-3xl font-bold text-center mb-8">
-        {{ $t('latestNews') }}
-      </h2>
+  <section class="max-w-content mx-auto w-full px-4 sm:px-6 pb-12">
+    <h2 class="text-2xl font-extrabold text-base-content mb-8">更多新闻</h2>
 
-      <div
-        v-for="(articles, sectionName) in sections"
-        :key="sectionName"
-        class="mb-12"
-      >
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-2xl font-bold">
-            {{ $t(`sections.${sectionName}`) }}
-          </h3>
-          <div class="flex gap-2">
-            <button
-              class="btn btn-circle btn-sm"
-              @click="scrollSection(sectionName, -300)"
-            >
-              ❮
-            </button>
-            <button
-              class="btn btn-circle btn-sm"
-              @click="scrollSection(sectionName, 300)"
-            >
-              ❯
-            </button>
-          </div>
-        </div>
-
-        <div
-          :ref="(el) => (sectionRefs[sectionName] = el)"
-          class="flex overflow-x-auto gap-4 scroll-smooth hide-scrollbar"
-          style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch"
+    <div
+      v-for="key in orderedKeys"
+      :key="key"
+      v-show="cards(key).length"
+      class="mb-10"
+    >
+      <div class="flex items-baseline gap-2 mb-4">
+        <h3 class="text-lg font-extrabold text-accent">
+          {{ $t('sections.' + key) }}
+        </h3>
+        <span
+          class="text-[11px] font-bold uppercase tracking-wider text-base-content/25"
         >
-          <div
-            v-for="article in articles"
-            :key="article.url"
-            class="flex-none w-72"
-          >
+          {{ key }}
+        </span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <a
+          v-for="article in cards(key)"
+          :key="article.url"
+          :href="article.url"
+          target="_blank"
+          rel="noopener"
+          class="group block overflow-hidden rounded-lg border border-white/5 bg-base-200 transition-colors hover:border-white/15 hover:bg-base-300"
+        >
+          <div class="aspect-[16/10] overflow-hidden bg-base-300">
+            <img
+              v-if="article.image_url && !failed[article.url]"
+              :src="article.image_url"
+              :alt="article.title"
+              loading="lazy"
+              class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              @error="onImgError(article.url)"
+            />
             <div
-              class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow relative h-48"
+              v-else
+              class="flex h-full w-full items-center justify-center text-xs text-base-content/20"
             >
-              <img
-                :src="article.image_url"
-                :alt="article.title"
-                class="absolute inset-0 w-full h-full object-cover"
-                @error="handleImageError($event, article)"
-              />
-              <div
-                class="card-body absolute inset-0 bg-gradient-to-t from-black/70 to-transparent p-4 flex flex-col justify-end text-white"
-              >
-                <span class="text-xs opacity-80">{{
-                  article.relative_time
-                }}</span>
-                <h3 class="text-lg font-bold line-clamp-2 mb-2">
-                  {{ article.title }}
-                </h3>
-                <a
-                  :href="article.url"
-                  target="_blank"
-                  class="btn btn-primary btn-sm w-fit self-end"
-                >
-                  {{ $t('readMore') }}
-                </a>
-              </div>
+              暂无配图
             </div>
           </div>
-        </div>
+          <div class="p-3">
+            <div class="mb-1.5 text-xs font-semibold text-accent">
+              {{ article.relative_time }}
+              <span class="text-base-content/25">·</span>
+              {{ $t('sections.' + key) }}
+            </div>
+            <h4
+              class="line-clamp-3 text-sm font-bold leading-snug text-base-content transition-colors group-hover:text-primary"
+            >
+              {{ zhTitle(article) }}
+            </h4>
+            <p
+              v-if="enTitle(article)"
+              class="mt-1.5 line-clamp-2 text-xs leading-snug text-base-content/40"
+            >
+              {{ enTitle(article) }}
+            </p>
+          </div>
+        </a>
       </div>
     </div>
   </section>
 </template>
 
 <script>
-import axios from 'axios';
+import { stripLeadingEmoji, stripReadingTime } from '../utils/text';
 
 export default {
   name: 'LatestArticles',
+  props: {
+    sections: {
+      type: Object,
+      default: () => ({}),
+    },
+    enMap: {
+      type: Object,
+      default: () => ({}),
+    },
+  },
   data() {
     return {
-      sections: {},
-      sectionRefs: {},
+      orderedKeys: [
+        'Big Tech & Startups',
+        'Programming, Design & Data Science',
+        'Science & Futuristic Technology',
+        'Miscellaneous',
+        'Quick Links',
+      ],
+      failed: {},
     };
   },
-  async mounted() {
-    try {
-      // 使用相对路径，Vercel 会自动路由到后端
-      const API_URL = import.meta.env.VITE_API_URL || '';
-
-      const response = await axios.get(
-        `${API_URL}/api/latest-articles-by-section`
-      );
-      this.sections = response.data;
-    } catch (error) {
-      console.error('Error fetching latest articles:', error);
-    }
-  },
   methods: {
-    handleImageError(event, article) {
-      event.target.style.display = 'none';
-      article.image_url = null;
+    // 首篇文章已用于头条/侧栏，这里从第二篇开始展示，避免重复
+    cards(key) {
+      const list = this.sections[key];
+      return Array.isArray(list) ? list.slice(1) : [];
     },
-    scrollSection(sectionName, offset) {
-      const element = this.sectionRefs[sectionName];
-      if (element) {
-        element.scrollLeft += offset;
-      }
+    zhTitle(article) {
+      return stripLeadingEmoji(article?.title || '');
+    },
+    enTitle(article) {
+      if (!article) return '';
+      const direct = stripReadingTime(article.title_en || '');
+      if (direct) return direct;
+      return this.enMap[article.url] || '';
+    },
+    onImgError(url) {
+      this.failed[url] = true;
     },
   },
 };
 </script>
-
-<style scoped>
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-</style>

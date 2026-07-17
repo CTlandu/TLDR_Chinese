@@ -5,12 +5,14 @@
 
       <main class="flex-grow">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-          <h1 class="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-8">
+          <h1 class="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6">
             {{ newsletter?.generated_title || '今日科技要闻速递' }}【<time
               :datetime="currentDate"
               >{{ currentDate }}</time
             >】
           </h1>
+
+          <DateSelector :dates="dateOptions" :current-date="currentDate" />
 
           <div
             v-if="loading"
@@ -30,7 +32,7 @@
               class="mb-8 sm:mb-12"
             >
               <h2
-                class="divider text-xl sm:text-2xl font-bold break-words max-w-full px-2 sm:px-4"
+                class="divider text-lg sm:text-xl font-extrabold text-accent break-words max-w-full px-2 sm:px-4"
               >
                 {{ section.section }}
               </h2>
@@ -38,7 +40,7 @@
               <article
                 v-for="article in section.articles"
                 :key="article.url"
-                class="card bg-base-200 shadow-xl mb-4 sm:mb-8"
+                class="card rounded-lg border border-white/5 bg-base-200 mb-4 sm:mb-8"
               >
                 <div class="card-body p-4 sm:p-6">
                   <h3 class="card-title text-base sm:text-lg md:text-xl">
@@ -48,7 +50,7 @@
                       rel="noopener"
                       class="link link-primary hover:underline"
                     >
-                      {{ article.title }}
+                      {{ stripLeadingEmoji(article.title) }}
                     </a>
                   </h3>
                   <p class="italic text-sm sm:text-base text-base-content/70">
@@ -106,6 +108,8 @@ import { useHead } from '@unhead/vue';
 import ErrorBoundary from '../components/ErrorBoundary.vue';
 import Navbar from '../components/Navbar.vue';
 import Footer from '../components/Footer.vue';
+import DateSelector from '../components/DateSelector.vue';
+import { stripLeadingEmoji } from '../utils/text';
 
 export default {
   name: 'NewsletterView',
@@ -113,6 +117,7 @@ export default {
     ErrorBoundary,
     Navbar,
     Footer,
+    DateSelector,
   },
   setup() {
     const newsletterData = ref(null);
@@ -230,7 +235,28 @@ export default {
       newsletter: null,
     };
   },
+  computed: {
+    // 最近若干个工作日 + 当前所在日期，供往期存档切换
+    dateOptions() {
+      const fmt = (d) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+          d.getDate()
+        ).padStart(2, '0')}`;
+      const set = new Set();
+      const d = new Date();
+      let guard = 0;
+      while (set.size < 8 && guard < 20) {
+        const day = d.getDay();
+        if (day !== 0 && day !== 6) set.add(fmt(d));
+        d.setDate(d.getDate() - 1);
+        guard += 1;
+      }
+      if (this.currentDate) set.add(this.currentDate);
+      return Array.from(set).sort().reverse();
+    },
+  },
   methods: {
+    stripLeadingEmoji,
     async fetchData(date) {
       this.loading = true;
       try {

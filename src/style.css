@@ -3,65 +3,33 @@
 @tailwind utilities;
 
 /* ==========================================
+   字体
+   ========================================== */
+html {
+  font-family:
+    'Nunito', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    system-ui, sans-serif;
+}
+
+/* ==========================================
    可访问性设置 - 字体大小
+   通过缩放根字号（rem）整体放大/缩小，保留完整的字号层级
    ========================================== */
 
-/* 默认字体大小（中号） */
 :root {
-  --base-font-size: 1rem;
-  --heading-multiplier: 1;
+  font-size: 16px;
 }
 
-/* 小号字体 */
 :root[data-font-size='small'] {
-  --base-font-size: 0.875rem; /* 14px */
-  --heading-multiplier: 0.9;
+  font-size: 15px;
 }
 
-/* 中号字体（默认） */
 :root[data-font-size='medium'] {
-  --base-font-size: 1rem; /* 16px */
-  --heading-multiplier: 1;
+  font-size: 16px;
 }
 
-/* 大号字体 */
 :root[data-font-size='large'] {
-  --base-font-size: 1.125rem; /* 18px */
-  --heading-multiplier: 1.1;
-}
-
-/* 应用字体大小到主要内容区域（不包括导航栏） */
-main,
-.card,
-.card-body,
-section,
-article,
-p,
-li,
-.text-base,
-.text-sm,
-.text-xs,
-.text-lg,
-.text-xl,
-.text-2xl,
-.text-3xl {
-  font-size: var(--base-font-size) !important;
-}
-
-/* 标题字体缩放 */
-main h1,
-section h1 {
-  font-size: calc(2.25rem * var(--heading-multiplier)) !important;
-}
-
-main h2,
-section h2 {
-  font-size: calc(1.875rem * var(--heading-multiplier)) !important;
-}
-
-main h3,
-section h3 {
-  font-size: calc(1.5rem * var(--heading-multiplier)) !important;
+  font-size: 18px;
 }
 
 /* ==========================================
