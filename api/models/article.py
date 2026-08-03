@@ -7,6 +7,7 @@ class DailyNewsletter(db.Document):
     sections = db.ListField(db.DictField())
     created_at = db.DateTimeField(default=datetime.utcnow)
     generated_title = db.StringField()
+    email_sent_at = db.DateTimeField()  # 邮件群发时间，用于防止同一期重复发送
     
     meta = {
         'collection': 'newsletters',

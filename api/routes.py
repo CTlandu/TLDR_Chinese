@@ -541,6 +541,42 @@ def test_send_newsletter():
         return jsonify({'error': str(e)}), 500
     
     
+def _send_newsletter_to_subscribers(newsletter):
+    """把指定的 newsletter 发送给所有已确认订阅者"""
+    confirmed_subscribers = Subscriber.objects(confirmed=True).all()
+    subscriber_emails = [s.email for s in confirmed_subscribers]
+
+    if not subscriber_emails:
+        return jsonify({'message': '没有已确认的订阅者'}), 200
+
+    subject = f"[{newsletter.generated_title}] {newsletter.date.strftime('%Y-%m-%d')}"
+
+    mailgun = MailgunService(
+        current_app.config['MAILGUN_API_KEY'],
+        current_app.config['MAILGUN_DOMAIN']
+    )
+
+    html_content = mailgun.generate_newsletter_html(newsletter)
+
+    response = mailgun.send_daily_newsletter(
+        subscriber_emails,
+        subject,
+        html_content
+    )
+
+    if response.status_code == 200:
+        newsletter.email_sent_at = datetime.utcnow()
+        newsletter.save()
+
+    return jsonify({
+        'message': f'成功发送每日新闻给 {len(subscriber_emails)} 位订阅者',
+        'date': newsletter.date.strftime('%Y-%m-%d'),
+        'subscriber_count': len(subscriber_emails),
+        'status_code': response.status_code,
+        'response_text': response.text
+    })
+
+
 @bp.route('/api/send_daily_newsletter', methods=['POST'])
 def send_daily_newsletter_api():
     try:
@@ -548,48 +584,85 @@ def send_daily_newsletter_api():
         api_key = request.headers.get('X-API-Key')
         if api_key != current_app.config.get('NEWSLETTER_API_KEY'):
             return jsonify({'error': '未授权的请求'}), 401
-            
+
         # 获取最新的 newsletter
         latest_newsletter = DailyNewsletter.objects.order_by('-date').first()
-        
+
         if not latest_newsletter:
             return jsonify({'error': '没有找到可用的 newsletter'}), 404
-            
-        # 获取所有已确认的订阅者
-        confirmed_subscribers = Subscriber.objects(confirmed=True).all()
-        subscriber_emails = [s.email for s in confirmed_subscribers]
-        
-        if not subscriber_emails:
-            return jsonify({'message': '没有已确认的订阅者'}), 200
-            
-        # 准备邮件内容，使用数据库中的 generated_title
-        subject = f"[{latest_newsletter.generated_title}] {latest_newsletter.date.strftime('%Y-%m-%d')}"
-        
-        # 创建 Mailgun 服务实例
-        mailgun = MailgunService(
-            current_app.config['MAILGUN_API_KEY'],
-            current_app.config['MAILGUN_DOMAIN']
-        )
-        
-        # 使用 mailgun 实例生成 HTML
-        html_content = mailgun.generate_newsletter_html(latest_newsletter)
-        
-        response = mailgun.send_daily_newsletter(
-            subscriber_emails,
-            subject,
-            html_content
-        )
-        
-        return jsonify({
-            'message': f'成功发送每日新闻给 {len(subscriber_emails)} 位订阅者',
-            'date': latest_newsletter.date.strftime('%Y-%m-%d'),
-            'subscriber_count': len(subscriber_emails),
-            'status_code': response.status_code,
-            'response_text': response.text
-        })
-        
+
+        return _send_newsletter_to_subscribers(latest_newsletter)
+
     except Exception as e:
         logging.error(f"Failed to send daily newsletter: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+####################
+# Vercel Cron Jobs #
+####################
+
+def _cron_auth_ok():
+    """Vercel Cron 请求会自动带上 Authorization: Bearer ${CRON_SECRET}"""
+    secret = current_app.config.get('CRON_SECRET')
+    return bool(secret) and request.headers.get('Authorization') == f'Bearer {secret}'
+
+
+@bp.route('/api/cron/generate_newsletter', methods=['GET'])
+def cron_generate_newsletter():
+    """定时任务一：抓取并生成当天（美东时间）的 newsletter"""
+    if not _cron_auth_ok():
+        return jsonify({'error': '未授权的请求'}), 401
+
+    try:
+        et = pytz.timezone('US/Eastern')
+        today_et = datetime.now(et).strftime('%Y-%m-%d')
+        result = get_newsletter(today_et)
+
+        if result:
+            return jsonify({
+                'message': f'{today_et} 简报已就绪',
+                'title': result.get('generated_title')
+            })
+        return jsonify({'message': f'{today_et} 暂无可用内容'}), 200
+
+    except Exception as e:
+        logging.error(f"Cron generate newsletter failed: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/cron/send_newsletter', methods=['GET'])
+def cron_send_newsletter():
+    """定时任务二：发送当天的 newsletter。当天没有新刊（周末/节假日）时跳过，避免重复发旧内容"""
+    if not _cron_auth_ok():
+        return jsonify({'error': '未授权的请求'}), 401
+
+    try:
+        et = pytz.timezone('US/Eastern')
+        today_et = datetime.now(et).date()
+
+        # 兜底：如果生成任务失败或没跑，这里再尝试生成一次
+        get_newsletter(today_et.strftime('%Y-%m-%d'))
+
+        latest_newsletter = DailyNewsletter.objects.order_by('-date').first()
+
+        if not latest_newsletter:
+            return jsonify({'error': '没有找到可用的 newsletter'}), 404
+
+        if latest_newsletter.date != today_et:
+            return jsonify({
+                'message': f'{today_et} 无新简报（最新为 {latest_newsletter.date}），跳过发送'
+            }), 200
+
+        if latest_newsletter.email_sent_at:
+            return jsonify({
+                'message': f'{today_et} 的简报已于 {latest_newsletter.email_sent_at} 发送过，跳过'
+            }), 200
+
+        return _send_newsletter_to_subscribers(latest_newsletter)
+
+    except Exception as e:
+        logging.error(f"Cron send newsletter failed: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
 ########################

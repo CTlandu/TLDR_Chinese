@@ -27,6 +27,7 @@ class BaseConfig:
     FRONTEND_URL = os.environ.get('FRONTEND_URL')
     BACKEND_URL = os.environ.get('BACKEND_URL')
     NEWSLETTER_API_KEY = os.environ.get('NEWSLETTER_API_KEY')
+    CRON_SECRET = os.environ.get('CRON_SECRET')
     ERNIE_API_KEY = os.environ.get('ERNIE_API_KEY')  # 百度文心一言 API Key
     ERNIE_SECRET_KEY = os.environ.get('ERNIE_SECRET_KEY')  # 百度文心一言 Secret Key
 
