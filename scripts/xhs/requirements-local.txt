@@ -1,0 +1,22 @@
+# 小红书流水线的本地依赖。
+#
+# 不要合并进根目录的 requirements.txt —— 那份是 Vercel 装 serverless 依赖用的，
+# Playwright 进去只会白白撑大部署包，而渲染和发布本来就跑不了 serverless。
+#
+# 首次安装：
+#   python3 -m venv venv
+#   ./venv/bin/pip install -r scripts/xhs/requirements-local.txt
+#   ./venv/bin/playwright install chromium
+#
+# 运行（会话接管模式，不需要 DEEPSEEK_API_KEY）：
+#   ./venv/bin/python scripts/xhs/run_daily.py prepare        # 取当天新闻 → candidates_input.json
+#   （在 Claude Code 会话里排序并写文案 → notes.json）
+#   ./venv/bin/python scripts/xhs/run_daily.py build          # 出图 + 审核页
+#
+# 运行（全自动模式，需要 DEEPSEEK_API_KEY 和 MONGODB_URI）：
+#   ./venv/bin/python scripts/xhs/run_daily.py auto
+
+openai>=1.0.0
+requests>=2.31.0
+playwright>=1.40.0
+pytest>=8.0.0
