@@ -10,7 +10,9 @@ origin: docs/brainstorms/2026-08-10-xhs-auto-pipeline-requirements.md
 
 ## Summary
 
-在现有新闻流水线之外新增一条本地流水线：读取当天已入库的 `DailyNewsletter`，用 DeepSeek 对每条新闻打分选出 3 条，为每条独立生成一篇小红书笔记（3-4 张 1080×1440 卡片 + 标题 + 正文 + 标签），产出一个 HTML 审核页；运营者挑一篇，由 ego-browser 在会话中执行发布。
+在现有新闻流水线之外新增一条本地流水线：取当天新闻，选出 3 条最有传播潜力的，为每条独立生成一篇小红书笔记（3-4 张 1080×1440 卡片 + 标题 + 正文 + 标签），产出一个 HTML 审核页；运营者挑一篇，由 ego-browser 在会话中执行发布。
+
+选题和写文案这一层有两种跑法，共用同一套渲染和审核页：**会话接管**（默认，`prepare` → Claude Code 会话里排序写文案 → `build`，不需要任何 API key）和**全自动**（`auto`，用 DeepSeek，需要 key 和数据库凭据）。
 
 ---
 
@@ -26,30 +28,41 @@ TLDRChinese 的四条分发渠道里，小红书是唯一没打通、也是唯�
 
 ## High-Level Technical Design
 
-整条流水线是单进程顺序执行，两处分支门：当天无刊时直接退出，配图不可用时降级而非跳过。
+流水线在「排序 + 写文案」这一层分岔，两条路汇回同一套渲染和审核页。分支门有三处：当天无刊直接产出说明页、配图不可用时降级而非跳过、单条候选失败不影响其余。
 
 ```mermaid
 flowchart TB
-  START([本地入口 run_daily.py]) --> LOAD[读取当天 DailyNewsletter]
-  LOAD --> HASNEWS{当天有刊?}
-  HASNEWS -->|否| EXIT([退出并说明])
-  HASNEWS -->|是| FLATTEN[展平 sections 为文章列表]
-  FLATTEN --> DEDUP[剔除 XhsPost 中已出稿的 url]
-  DEDUP --> SCORE[DeepSeek 打分排序]
-  SCORE --> TOP[取前 N 条 N<=3]
-  TOP --> COPY[逐条生成标题/正文/标签]
-  COPY --> LIMIT[字数自检 超限则重写]
-  LIMIT --> IMG{原文配图可用?}
-  IMG -->|是| COVERIMG[封面用原图 + 文字层]
-  IMG -->|否| COVERPLAIN[降级为纯排版封面]
-  COVERIMG --> SHOT[headless Chromium 逐张截图]
-  COVERPLAIN --> SHOT
-  SHOT --> REVIEW[渲染 HTML 审核页]
-  REVIEW --> PICK([人工挑选 → ego-browser 发布])
-  PICK --> RECORD[写入 XhsPost 出稿记录]
+  subgraph prepare[prepare]
+    SRC{数据来源}
+    SRC -->|api| FETCHAPI[公开接口 tldrnewsletter.cn]
+    SRC -->|db| FETCHDB[MongoDB DailyNewsletter]
+    FETCHAPI --> FLATTEN[展平 sections]
+    FETCHDB --> FLATTEN
+    FLATTEN --> DEDUP[剔除已出稿的 url]
+    DEDUP --> INPUT[(candidates_input.json)]
+  end
+
+  INPUT --> SESSION[Claude Code 会话里排序并写文案]
+  SESSION --> NOTES[(notes.json)]
+  INPUT -.->|auto 模式| DS[DeepSeek 打分 + 写文案]
+  DS -.-> NOTES
+
+  subgraph build[build]
+    NOTES --> NORM[字数/标签/卡片数硬约束]
+    NORM --> IMG{原文配图可用?}
+    IMG -->|是| COVERIMG[封面用原图 + 遮罩文字层]
+    IMG -->|否| COVERPLAIN[降级为纯排版封面]
+    COVERIMG --> SHOT[headless Chromium 逐张截图]
+    COVERPLAIN --> SHOT
+    SHOT --> REVIEW[渲染 HTML 审核页]
+  end
+
+  REVIEW --> PICK([人工挑一篇 → ego-browser 发布])
 ```
 
-选题、文案两层是纯 API 调用，放在 `api/services/` 与 `title_generator.py` 并列，保持服务层一致，也留下将来挂成 Vercel cron 路由的口子。渲染、编排、发布三层是本地专属，放在 `scripts/xhs/`，依赖单独声明，不进 `requirements.txt`（避免污染 Vercel 部署包）。
+两条路能共用同一套下游，是因为 `run_pipeline` 把打分器和文案器作为参数注入。会话模式下传入的 `PreparedScorer` / `PreparedCopywriter` 只是把 `notes.json` 里已经写好的内容原样回放，不做任何判断。
+
+选题、文案两个 DeepSeek 服务放在 `api/services/` 与 `title_generator.py` 并列，留下将来挂成 Vercel cron 路由的口子。渲染、编排、发布三层是本地专属，放在 `scripts/xhs/`，依赖单独声明在 `scripts/xhs/requirements-local.txt`。`.vercelignore` 本来就排除了 `scripts/` 和 `tests/`，所以部署包不受影响。
 
 ---
 
@@ -87,6 +100,10 @@ R-ID 与 origin 文档一一对应，便于回溯。
 ---
 
 ## Key Technical Decisions
+
+**选题和文案默认由 Claude Code 会话承担，DeepSeek 降为备用路径。** 这一层唯一的产物是一个 `notes.json`，谁写的不影响下游。会话来写省掉了 API key、省掉了调 prompt 的迭代成本，中文文案质量也更好；代价是这条链永远不可能无人值守。因为流程本来就要求人在场审核，这个代价当前接近于零——真正被关掉的门只有「早上起来审核页已经在那儿了」。DeepSeek 那两个服务保留为 `auto` 子命令，将来想挂无人值守不用重写。
+
+**`prepare` 默认走公开接口而不是 MongoDB。** `https://www.tldrnewsletter.cn/api/newsletter/<date>` 返回的字段形状与 `DailyNewsletter.sections` 完全一致，且不需要数据库凭据。副作用是这条路没有 `XhsPost` 可查，去重改为扫历史产物目录里的 `note.json`——够用，且天然跟着产物走。`--source db` 保留完整的数据库路径。
 
 **整条流水线跑在本地单进程，不新增 Vercel cron 路由。** 渲染依赖 Chromium、发布依赖真实登录态，两者都无法搬到 serverless；把打分单独放云端只会多出一个跨环境接缝和一次额外的 Mongo 往返，换不来任何东西。入口沿用 `scripts/update_articles.py` 的写法：`sys.path` 加根目录 → `create_app()` → `with app.app_context()`。
 
@@ -189,7 +206,7 @@ R-ID 与 origin 文档一一对应，便于回溯。
 
 ### U5. 流水线编排与审核页
 
-- **Goal:** 把 U1-U4 串成一条命令，产出当天的全部候选与审核页。
+- **Goal:** 把 U1-U4 串起来，产出当天的全部候选与审核页。三个子命令：`prepare` 取新闻落盘待选清单，`build` 读排好的文案出图并渲染审核页，`auto` 用 DeepSeek 一段跑完。
 - **Requirements:** R1, R12, R13
 - **Dependencies:** U1, U2, U3, U4
 - **Files:**
@@ -254,6 +271,24 @@ R-ID 与 origin 文档一一对应，便于回溯。
 - 全自动发布。省的时间不值一个天天可能挂的环节，也拿掉了内容质量的最后一道闸。
 - `write-xiaohongshu` skill 那套"先研究同类爆款再动笔"的流程。它整条依赖小红书 MCP，当前环境未安装，不作为本次前提。
 - 账号定位、头像、简介的重做。
+
+---
+
+## 实现结果与偏差
+
+计划写完之后，执行过程中有三处偏离了原计划，都是执行时才暴露的信息导致的：
+
+**加了 `prepare` / `build` 两段模式，DeepSeek 从默认降为备用。** 原计划只有 DeepSeek 一条路。执行时发现 `.env` / `.env.local` 里的 `DEEPSEEK_API_KEY` 和 `MONGODB_URI` 都是占位符（`your_deepseek_key`），端到端验证跑不起来；同时既然人本来就要在场审核，让会话直接承担选题和文案反而更省事、中文质量也更好。两段模式让两条路共用下游。
+
+**去重逻辑拆成纯函数加查询两部分。** 原计划把 `filter_unpublished` 放在 `api/models/xhs_post.py` 里。实际拆成 `api/services/xhs_dedup.py`（纯逻辑，无依赖）和模型文件（只有 Document 定义）。原因是 `api/__init__.py` 会拉起整套 flask 依赖，纯逻辑测试不该为此付代价。
+
+**配图探测超时从 8 秒放宽到 15 秒。** 真实跑的时候 `storage.ghost.io` 回 HEAD 用了 9.6 秒，8 秒会把一张能用的封面图误判成不可用。诊断确认那台 CDN 不拒绝 HEAD，只是冷缓存慢。
+
+### 验证状态
+
+`prepare` → 会话排序写文案 → `build` 这条默认路径，用 2026-08-08 的 14 篇真实新闻端到端跑通过：选出 3 篇，产出 12 张图和审核页，零失败，带配图和降级两条渲染路径都实际走到。75 个测试通过。
+
+**未验证：** `auto`（DeepSeek）路径一次都没跑过，只有单元测试覆盖；U6 的发布环节一次都没跑过，`scripts/xhs/PUBLISH.md` 里的选择器全部是推导的，需要一次真人监督的发布来确认。这是 `status` 仍为 `active` 的唯一原因。
 
 ---
 
