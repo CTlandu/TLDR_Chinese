@@ -1,0 +1,167 @@
+<meta charset="utf-8">
+<title>小红书候选 {{DATE}}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif;
+    background: #12100F;
+    color: #F5F1EC;
+    line-height: 1.7;
+    padding: 64px 48px 120px;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+
+  header { display: flex; flex-direction: column; gap: 10px; }
+
+  .eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(245, 241, 236, 0.45);
+  }
+
+  h1 { font-size: 30px; font-weight: 650; letter-spacing: -0.01em; }
+
+  .summary {
+    font-size: 15px;
+    color: rgba(245, 241, 236, 0.62);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .notice {
+    border: 1px solid rgba(232, 80, 58, 0.4);
+    background: rgba(232, 80, 58, 0.08);
+    padding: 20px 24px;
+    font-size: 15px;
+  }
+
+  .candidate {
+    border-top: 1px solid rgba(245, 241, 236, 0.14);
+    padding-top: 32px;
+    display: grid;
+    grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+    gap: 36px;
+  }
+
+  @media (max-width: 900px) { .candidate { grid-template-columns: 1fr; } }
+
+  .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start; }
+  .shots img { width: 100%; display: block; border: 1px solid rgba(245, 241, 236, 0.1); }
+
+  .detail { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+  .index {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    color: rgba(245, 241, 236, 0.5);
+  }
+  .index b { color: #E8503A; font-size: 22px; letter-spacing: 0; }
+
+  .field { display: flex; flex-direction: column; gap: 7px; }
+
+  .label {
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(245, 241, 236, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .value { font-size: 16px; white-space: pre-wrap; word-break: break-word; }
+  .value.title { font-size: 22px; font-weight: 600; }
+
+  .meta { font-size: 13px; color: rgba(245, 241, 236, 0.45); }
+  .meta a { color: rgba(245, 241, 236, 0.6); }
+
+  button {
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: rgba(245, 241, 236, 0.65);
+    background: transparent;
+    border: 1px solid rgba(245, 241, 236, 0.25);
+    padding: 2px 10px;
+    cursor: pointer;
+  }
+  button:hover { border-color: #E8503A; color: #F5F1EC; }
+  button:focus-visible { outline: 2px solid #E8503A; outline-offset: 2px; }
+
+  .count { font-variant-numeric: tabular-nums; }
+  .count.over { color: #E8503A; }
+
+  .failures {
+    border-top: 1px solid rgba(245, 241, 236, 0.14);
+    padding-top: 24px;
+    font-size: 14px;
+    color: rgba(245, 241, 236, 0.55);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  footer {
+    border-top: 1px solid rgba(245, 241, 236, 0.14);
+    padding-top: 24px;
+    font-size: 14px;
+    color: rgba(245, 241, 236, 0.5);
+  }
+  footer code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: #F5F1EC;
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">TLDR 科技日报 · 小红书候选</p>
+    <h1>{{DATE}}</h1>
+    <p class="summary">{{SUMMARY}}</p>
+  </header>
+
+  {{NOTICE}}
+  {{CANDIDATES}}
+  {{FAILURES}}
+
+  <footer>
+    决定发哪篇后，在 Claude Code 会话里说 <code>发第 N 篇</code>，由 ego-browser 执行发布。
+    发布规程见 <code>scripts/xhs/PUBLISH.md</code>。
+  </footer>
+</div>
+
+<script>
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest('button[data-copy]');
+    if (!button) return;
+
+    var text = document.getElementById(button.dataset.copy).textContent;
+    var done = function () {
+      var original = button.textContent;
+      button.textContent = '已复制';
+      setTimeout(function () { button.textContent = original; }, 1200);
+    };
+
+    // file:// 下 clipboard API 不一定可用，失败时退回 execCommand
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else {
+      fallback();
+    }
+
+    function fallback() {
+      var area = document.createElement('textarea');
+      area.value = text;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand('copy'); done(); } finally { area.remove(); }
+    }
+  });
+</script>

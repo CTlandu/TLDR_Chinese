@@ -53,3 +53,6 @@ instance/
 # 临时文件
 tmp/
 temp/
+
+# 小红书流水线产物（每天几十 MB 的 PNG，不进版本库）
+scripts/xhs/output/
