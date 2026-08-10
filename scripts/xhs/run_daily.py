@@ -29,6 +29,11 @@ NOTES_FILENAME = 'notes.json'
 logger = logging.getLogger(__name__)
 
 
+def source_label(url: str) -> str:
+    from article_fetcher import source_label as _label
+    return _label(url)
+
+
 def flatten_sections(sections) -> List[Dict]:
     """把 DailyNewsletter.sections 摊平成文章列表。缺 articles 键的 section 直接跳过。"""
     articles = []
@@ -101,7 +106,9 @@ def run_pipeline(
 
         out_dir = out_root / date_str / f'{index:02d}'
         try:
-            images = render_fn(note, out_dir, article.get('image_url'))
+            images = render_fn(
+                note, out_dir, article.get('image_url'), source_label(article.get('url', ''))
+            )
         except Exception as e:
             logger.error(f"第 {index} 条渲染失败：{str(e)}")
             result['failures'].append({
@@ -308,6 +315,27 @@ def normalize_note(note: Dict) -> Dict:
     return note
 
 
+def attach_source_text(articles: List[Dict], workers: int = 6) -> None:
+    """给每篇挂上英文原文正文，供写文案时当素材。
+
+    TLDR 里大量链接指向付费墙站点，抓不到是常态。抓不到就把 source_text 留空，
+    写的人看到空值就知道这条只有 TLDR 的中文摘要可用。
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    from article_fetcher import fetch_article_text
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        texts = list(pool.map(lambda a: fetch_article_text(a.get('url')), articles))
+
+    got = 0
+    for article, text in zip(articles, texts):
+        article['source_text'] = text or ''
+        got += bool(text)
+
+    logger.info(f"抓到英文原文 {got}/{len(articles)} 篇")
+
+
 def cmd_prepare(date_str: str, source: str) -> Path:
     """第一段：取当天新闻、去重，把待选清单落盘等人（或模型）来排。"""
     if source == 'db':
@@ -327,6 +355,8 @@ def cmd_prepare(date_str: str, source: str) -> Path:
     articles = filter_unpublished(articles, seen)
     logger.info(f"去重后剩余 {len(articles)} 篇")
 
+    attach_source_text(articles)
+
     day_dir = OUTPUT_ROOT / date_str
     day_dir.mkdir(parents=True, exist_ok=True)
     path = day_dir / INPUT_FILENAME
@@ -343,6 +373,7 @@ def cmd_prepare(date_str: str, source: str) -> Path:
 
 def cmd_build(date_str: str) -> Path:
     """第二段：读排好的文案，出图并渲染审核页。"""
+    import image_finder
     import render
 
     day_dir = OUTPUT_ROOT / date_str
@@ -354,6 +385,12 @@ def cmd_build(date_str: str) -> Path:
         for pick in picks if pick.get('note')
     ]
     logger.info(f"读到 {len(picks)} 篇已排好的文案")
+
+    # 只给选中的这几篇补抓配图，别为 14 篇全都发一遍请求
+    picked_urls = {p['url'] for p in picks}
+    for article in articles:
+        if article.get('url') in picked_urls and not article.get('image_url'):
+            article['image_url'] = image_finder.backfill_image(article)
 
     result = run_pipeline(
         articles,

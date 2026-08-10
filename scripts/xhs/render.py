@@ -92,6 +92,7 @@ def build_card_html(
     variant: str,
     text: str = '',
     image_url: Optional[str] = None,
+    source: str = '',
 ) -> str:
     """三种版式：cover 封面钩子、body 正文、outro 引流。
 
@@ -115,26 +116,39 @@ def build_card_html(
         media = f'<div class="media" style="{style}"></div>'
 
     rule = '<div class="rule"></div>' if variant == 'cover' else ''
+    credit = f'<div class="source">{html_lib.escape(source)}</div>' if source else ''
 
     return _wrap(
         f'{media}'
         f'<div class="panel {variant}">'
         f'{rule}'
         f'<div class="text">{html_lib.escape(text)}</div>'
+        f'{credit}'
         '</div>'
     )
 
 
-def build_note_pages(note: Dict, image_url: Optional[str] = None) -> List[str]:
-    """摊成待截图的 HTML 列表：1 张封面 + N 张正文 + 1 张引流卡。"""
+def build_note_pages(
+    note: Dict,
+    image_url: Optional[str] = None,
+    source: str = '',
+) -> List[str]:
+    """摊成待截图的 HTML 列表：1 张封面 + N 张正文 + 1 张引流卡。
+
+    出处标在封面和每张正文卡的左下角；引流卡不标，它不承载新闻内容。
+    """
     pages = [
         build_card_html(
             'cover',
             note.get('cover_hook') or note.get('title', ''),
             image_url=image_url,
+            source=source,
         )
     ]
-    pages.extend(build_card_html('body', card) for card in note.get('cards') or [])
+    pages.extend(
+        build_card_html('body', card, source=source)
+        for card in note.get('cards') or []
+    )
     pages.append(build_card_html('outro'))
     return pages
 
@@ -165,7 +179,12 @@ def html_overflows(html: str) -> bool:
             browser.close()
 
 
-def render_note(note: Dict, out_dir, image_url: Optional[str] = None) -> List[Path]:
+def render_note(
+    note: Dict,
+    out_dir,
+    image_url: Optional[str] = None,
+    source: str = '',
+) -> List[Path]:
     """渲染一篇笔记的全部卡片，返回生成的 PNG 路径。
 
     配图不可用时自动降级为纯排版版式，不会少出图、也不会抛异常。
@@ -180,7 +199,7 @@ def render_note(note: Dict, out_dir, image_url: Optional[str] = None) -> List[Pa
         logging.info('配图不可用，封面降级为纯排版')
 
     cover_text = note.get('cover_hook') or note.get('title', '')
-    pages = build_note_pages(note, image_url if usable else None)
+    pages = build_note_pages(note, image_url if usable else None, source=source)
     paths: List[Path] = []
 
     with sync_playwright() as p:
@@ -192,7 +211,7 @@ def render_note(note: Dict, out_dir, image_url: Optional[str] = None) -> List[Pa
 
                 if 'class="media"' in html and not page.evaluate(_MEDIA_LOADED_PROBE):
                     logging.info('配图在浏览器里没加载出来，封面改用纯排版')
-                    _settle(page, build_card_html('cover', cover_text))
+                    _settle(page, build_card_html('cover', cover_text, source=source))
 
                 if page.evaluate(_OVERFLOW_PROBE):
                     logging.warning(f"第 {index} 张卡片文字溢出，检查文案长度")

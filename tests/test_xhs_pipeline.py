@@ -61,7 +61,7 @@ class FakeCopywriter:
         }
 
 
-def fake_render(note, out_dir, image_url=None):
+def fake_render(note, out_dir, image_url=None, source=''):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = []
@@ -73,10 +73,10 @@ def fake_render(note, out_dir, image_url=None):
 
 
 def exploding_render(fail_on):
-    def _render(note, out_dir, image_url=None):
+    def _render(note, out_dir, image_url=None, source=''):
         if fail_on in note['title']:
             raise RuntimeError('浏览器崩了')
-        return fake_render(note, out_dir, image_url)
+        return fake_render(note, out_dir, image_url, source)
     return _render
 
 
@@ -266,6 +266,39 @@ def test_no_unreplaced_placeholders_on_review_page(tmp_path):
     ).read_text(encoding='utf-8')
 
     assert '{{' not in html
+
+
+def test_source_label_is_passed_through_to_the_renderer(tmp_path):
+    seen = []
+
+    def recording_render(note, out_dir, image_url=None, source=''):
+        seen.append(source)
+        return fake_render(note, out_dir, image_url, source)
+
+    run(articles(2), tmp_path, render_fn=recording_render)
+
+    assert seen == ['a.example', 'a.example']
+
+
+def test_source_label_strips_www_and_path():
+    assert pipeline.source_label('https://www.nytimes.com/2026/08/06/science/x.html') == 'nytimes.com'
+    assert pipeline.source_label('https://spyglass.org/you-are-the-tokens/?utm=x') == 'spyglass.org'
+    assert pipeline.source_label('') == ''
+
+
+def test_attach_source_text_marks_unfetchable_articles_as_empty(monkeypatch):
+    import article_fetcher
+
+    monkeypatch.setattr(
+        article_fetcher, 'fetch_article_text',
+        lambda url, **kw: 'full english body' if 'ok' in url else None
+    )
+
+    items = [{'url': 'https://ok.example/1'}, {'url': 'https://paywall.example/2'}]
+    pipeline.attach_source_text(items, workers=2)
+
+    assert items[0]['source_text'] == 'full english body'
+    assert items[1]['source_text'] == ''
 
 
 # ---------- 会话接管模式（prepare / build） ----------

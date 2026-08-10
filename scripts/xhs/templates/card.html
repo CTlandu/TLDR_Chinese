@@ -31,7 +31,18 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    padding: 84px 80px;
+    padding: 84px 80px 116px;
+    position: relative;
+  }
+
+  /* 出处标注。这是给读者的信息，不是品牌水印 */
+  .source {
+    position: absolute;
+    left: 80px;
+    bottom: 60px;
+    font-size: 26px;
+    letter-spacing: 0.04em;
+    color: #9A928A;
   }
 
   /* 封面文字居中而不是贴底。无配图时贴底会在上方留出三分之二的空白，
@@ -62,8 +73,8 @@
   }
 
   .body .text {
-    font-size: 44px;
-    line-height: 1.82;
+    font-size: 41px;
+    line-height: 1.76;
     font-weight: 400;
     letter-spacing: 0.005em;
   }
