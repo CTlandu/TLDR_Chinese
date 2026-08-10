@@ -11,8 +11,9 @@ TITLE_TARGET = 18
 BODY_LIMIT = 1000
 BODY_TARGET = 950
 
-TAG_MIN = 3
-TAG_MAX = 6
+# 真实的小红书科技号普遍挂 8-10 个标签，给 3-4 个反而不像原生内容
+TAG_MIN = 6
+TAG_MAX = 10
 
 # 封面 1 张 + 正文卡 CARD_MIN~CARD_MAX 张 = 每篇 3-4 张图
 CARD_MIN = 2

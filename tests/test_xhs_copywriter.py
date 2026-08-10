@@ -64,7 +64,7 @@ def test_body_over_target_triggers_rewrite_even_when_under_hard_limit():
 
 def test_too_many_tags_are_trimmed_to_max():
     client = FakeDeepSeekClient(
-        content=json.dumps(_note(tags=[f'标签{i}' for i in range(8)]))
+        content=json.dumps(_note(tags=[f'标签{i}' for i in range(cw.TAG_MAX + 4)]))
     )
 
     note = _service(client).generate_note(ARTICLE)
