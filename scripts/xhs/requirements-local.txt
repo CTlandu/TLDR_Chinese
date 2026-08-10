@@ -8,8 +8,13 @@
 #   ./venv/bin/pip install -r scripts/xhs/requirements-local.txt
 #   ./venv/bin/playwright install chromium
 #
-# 运行：
-#   ./venv/bin/python scripts/xhs/run_daily.py
+# 运行（会话接管模式，不需要 DEEPSEEK_API_KEY）：
+#   ./venv/bin/python scripts/xhs/run_daily.py prepare        # 取当天新闻 → candidates_input.json
+#   （在 Claude Code 会话里排序并写文案 → notes.json）
+#   ./venv/bin/python scripts/xhs/run_daily.py build          # 出图 + 审核页
+#
+# 运行（全自动模式，需要 DEEPSEEK_API_KEY 和 MONGODB_URI）：
+#   ./venv/bin/python scripts/xhs/run_daily.py auto
 
 openai>=1.0.0
 requests>=2.31.0

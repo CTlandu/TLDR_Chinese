@@ -8,7 +8,9 @@ import requests
 IMAGE_WIDTH = 1080
 IMAGE_HEIGHT = 1440
 DEVICE_SCALE = 2
-IMAGE_TIMEOUT = 8
+# 冷缓存的 CDN 回 HEAD 可能要将近 10 秒（实测 storage.ghost.io 9.6s）。
+# 每天最多 3 张封面，宁可多等也不要把能用的图误判掉。
+IMAGE_TIMEOUT = 15
 
 FOOTER_TEXT = 'tldrnewsletter.cn'
 USER_AGENT = (

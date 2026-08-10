@@ -268,6 +268,92 @@ def test_no_unreplaced_placeholders_on_review_page(tmp_path):
     assert '{{' not in html
 
 
+# ---------- 会话接管模式（prepare / build） ----------
+
+def test_prepared_scorer_replays_the_given_order():
+    picks = [
+        {'url': 'https://a.example/2', 'score': 9.1, 'reason': '第一'},
+        {'url': 'https://a.example/1', 'score': 4.2, 'reason': '第二'},
+    ]
+
+    ranked = pipeline.PreparedScorer(picks).score_articles(articles(3))
+
+    assert [r['url'] for r in ranked] == ['https://a.example/2', 'https://a.example/1']
+    assert ranked[0]['score'] == 9.1
+
+
+def test_prepared_copywriter_returns_none_for_unpicked_articles():
+    picks = [{'url': 'https://a.example/1', 'note': {'title': 'T'}}]
+    cw = pipeline.PreparedCopywriter(picks)
+
+    assert cw.generate_note({'url': 'https://a.example/1'})['title'] == 'T'
+    assert cw.generate_note({'url': 'https://a.example/9'}) is None
+
+
+def test_prepared_copywriter_hands_out_copies_not_shared_state():
+    picks = [{'url': 'https://a.example/1', 'note': {'title': 'T', 'tags': []}}]
+    cw = pipeline.PreparedCopywriter(picks)
+
+    first = cw.generate_note({'url': 'https://a.example/1'})
+    first['title'] = '被改了'
+
+    assert cw.generate_note({'url': 'https://a.example/1'})['title'] == 'T'
+
+
+def test_handwritten_note_still_gets_length_enforced():
+    note = pipeline.normalize_note({
+        'title': '一' * 30,
+        'body': '正文。',
+        'cards': ['只有一张'],
+        'tags': ['#科技', '科技', '#AI', 'a', 'b', 'c', 'd'],
+    })
+
+    assert len(note['title']) == 18
+    assert len(note['cards']) >= 2
+    assert len(note['tags']) <= 6
+    assert '#' not in ''.join(note['tags'])
+    assert note['cover_hook'] == note['title']
+
+
+def test_output_dir_scan_collects_previously_drafted_urls(tmp_path):
+    run(articles(2), tmp_path)
+    for candidate in run(articles(2), tmp_path)['candidates']:
+        pipeline.write_note_json(candidate)
+
+    seen = pipeline.seen_urls_from_output(tmp_path)
+
+    assert seen == {'https://a.example/1', 'https://a.example/2'}
+
+
+def test_output_dir_scan_ignores_corrupt_note_files(tmp_path):
+    broken = tmp_path / '2026-08-10' / '01'
+    broken.mkdir(parents=True)
+    (broken / 'note.json').write_text('{ not json', encoding='utf-8')
+
+    assert pipeline.seen_urls_from_output(tmp_path) == set()
+
+
+def test_public_api_fetch_flattens_and_warns_on_date_mismatch(monkeypatch, caplog):
+    from types import SimpleNamespace
+
+    payload = {
+        'currentDate': '2026-08-07',
+        'sections': [{'section': 'Tech', 'articles': [{'url': 'u1', 'title': 't1'}]}],
+    }
+    monkeypatch.setattr(
+        pipeline.requests, 'get',
+        lambda url, **kw: SimpleNamespace(
+            status_code=200, json=lambda: payload, raise_for_status=lambda: None
+        )
+    )
+
+    with caplog.at_level('WARNING'):
+        got = pipeline.fetch_articles_from_api('2026-08-08')
+
+    assert [a['url'] for a in got] == ['u1']
+    assert '2026-08-07' in caplog.text
+
+
 def test_review_page_images_actually_load_from_file_url(tmp_path):
     pytest.importorskip('playwright', reason='需要 playwright 打开 file:// 页面')
     from playwright.sync_api import sync_playwright

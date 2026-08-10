@@ -1,3 +1,4 @@
+import argparse
 import html as html_lib
 import json
 import logging
@@ -5,6 +6,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
+
+import requests
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
@@ -17,6 +20,11 @@ REVIEW_TEMPLATE = SCRIPT_DIR / 'templates' / 'review.html'
 
 TITLE_LIMIT = 20
 BODY_LIMIT = 1000
+
+PUBLIC_API = 'https://www.tldrnewsletter.cn/api/newsletter/{date}'
+
+INPUT_FILENAME = 'candidates_input.json'
+NOTES_FILENAME = 'notes.json'
 
 logger = logging.getLogger(__name__)
 
@@ -217,9 +225,156 @@ def write_note_json(candidate: Dict) -> Path:
     return path
 
 
-def main():
+def today_eastern() -> str:
     import pytz
+    return datetime.now(pytz.timezone('US/Eastern')).strftime('%Y-%m-%d')
 
+
+def fetch_articles_from_api(date_str: str) -> List[Dict]:
+    """从生产站点的公开接口取当天新闻，不需要数据库凭据。"""
+    response = requests.get(PUBLIC_API.format(date=date_str), timeout=30)
+    response.raise_for_status()
+    payload = response.json()
+
+    returned = payload.get('currentDate')
+    if returned != date_str:
+        logger.warning(f"接口返回的是 {returned} 的内容，不是 {date_str}")
+
+    return flatten_sections(payload.get('sections'))
+
+
+def fetch_articles_from_db(date_str: str) -> List[Dict]:
+    from api.models.article import DailyNewsletter
+    newsletter = DailyNewsletter.objects(date=date_str).first()
+    return flatten_sections(newsletter.sections) if newsletter else []
+
+
+def seen_urls_from_output(root) -> set:
+    """扫历史产物目录收集已出稿的 url。
+
+    api 来源模式下没有数据库，产物目录本身就是去重依据。
+    """
+    seen = set()
+    for note_path in Path(root).glob('*/*/note.json'):
+        try:
+            url = json.loads(note_path.read_text(encoding='utf-8')).get('source_url')
+        except Exception:
+            continue
+        if url:
+            seen.add(url)
+    return seen
+
+
+class PreparedScorer:
+    """把外部已经排好的顺序原样喂给流水线，替代 DeepSeek 打分。"""
+
+    def __init__(self, picks: List[Dict]):
+        self.picks = picks
+
+    def score_articles(self, articles):
+        return [
+            {
+                'url': pick['url'],
+                'score': float(pick.get('score', 0.0)),
+                'reason': pick.get('reason', ''),
+            }
+            for pick in self.picks
+        ]
+
+
+class PreparedCopywriter:
+    """把外部写好的文案原样喂给流水线，替代 DeepSeek 文案生成。"""
+
+    def __init__(self, picks: List[Dict]):
+        self.by_url = {p['url']: p['note'] for p in picks if p.get('note')}
+
+    def generate_note(self, article):
+        note = self.by_url.get(article.get('url'))
+        return dict(note) if note else None
+
+
+def normalize_note(note: Dict) -> Dict:
+    """手写文案同样要过字数和标签的硬约束，不因为是人写的就免检。"""
+    from api.services.xhs_copywriter import hard_truncate, normalize_cards, normalize_tags
+
+    note = dict(note)
+    note.setdefault('title', '')
+    note.setdefault('body', '')
+    note['tags'] = normalize_tags(note.get('tags') or [])
+    note = hard_truncate(note)
+    note['cards'] = normalize_cards(note.get('cards') or [], note['body'])
+    if not note.get('cover_hook'):
+        note['cover_hook'] = note['title']
+    return note
+
+
+def cmd_prepare(date_str: str, source: str) -> Path:
+    """第一段：取当天新闻、去重，把待选清单落盘等人（或模型）来排。"""
+    if source == 'db':
+        from api import create_app
+        app = create_app()
+        with app.app_context():
+            articles = fetch_articles_from_db(date_str)
+            from api.services.xhs_dedup import seen_source_urls
+            seen = seen_source_urls()
+    else:
+        articles = fetch_articles_from_api(date_str)
+        seen = seen_urls_from_output(OUTPUT_ROOT)
+
+    logger.info(f"{date_str} 取到 {len(articles)} 篇")
+
+    from api.services.xhs_dedup import filter_unpublished
+    articles = filter_unpublished(articles, seen)
+    logger.info(f"去重后剩余 {len(articles)} 篇")
+
+    day_dir = OUTPUT_ROOT / date_str
+    day_dir.mkdir(parents=True, exist_ok=True)
+    path = day_dir / INPUT_FILENAME
+    path.write_text(
+        json.dumps({'date': date_str, 'articles': articles}, ensure_ascii=False, indent=2),
+        encoding='utf-8'
+    )
+
+    print(f"\n待选 {len(articles)} 篇 → {path}")
+    print(f"排完序、写完文案后存成 {day_dir / NOTES_FILENAME}，再跑：")
+    print(f"  python scripts/xhs/run_daily.py build --date {date_str}")
+    return path
+
+
+def cmd_build(date_str: str) -> Path:
+    """第二段：读排好的文案，出图并渲染审核页。"""
+    import render
+
+    day_dir = OUTPUT_ROOT / date_str
+    articles = json.loads((day_dir / INPUT_FILENAME).read_text(encoding='utf-8'))['articles']
+    picks = json.loads((day_dir / NOTES_FILENAME).read_text(encoding='utf-8'))['picks']
+
+    picks = [
+        {**pick, 'note': normalize_note(pick['note'])}
+        for pick in picks if pick.get('note')
+    ]
+    logger.info(f"读到 {len(picks)} 篇已排好的文案")
+
+    result = run_pipeline(
+        articles,
+        PreparedScorer(picks),
+        PreparedCopywriter(picks),
+        render.render_note,
+        OUTPUT_ROOT,
+        date_str,
+    )
+
+    for candidate in result['candidates']:
+        write_note_json(candidate)
+
+    review_path = render_review_page(result, day_dir / 'review.html')
+    print(f"\n候选 {len(result['candidates'])} 篇，失败 {len(result['failures'])} 篇")
+    print(f"审核页：file://{review_path}")
+    return review_path
+
+
+def cmd_auto(date_str: str) -> Path:
+    """一段跑完的全自动路径，用 DeepSeek 打分和写文案。需要 DEEPSEEK_API_KEY。"""
     from api import create_app
     from api.models.article import DailyNewsletter
     from api.models.xhs_post import STATUS_DRAFTED, XhsPost
@@ -230,13 +385,9 @@ def main():
 
     import render
 
-    logging.basicConfig(level=logging.INFO)
-
     app = create_app()
     with app.app_context():
-        eastern = pytz.timezone('US/Eastern')
-        today = datetime.now(eastern).date()
-        date_str = today.strftime('%Y-%m-%d')
+        today = datetime.strptime(date_str, '%Y-%m-%d').date()
 
         # 同一天重跑：先清掉今天还没发出去的草稿记录，否则去重会把它们当"已出稿"
         # 全部滤掉，重跑只会得到一张空的审核页。已发布和已丢弃的记录不动。
@@ -284,6 +435,30 @@ def main():
 
     print(f"\n候选 {len(result['candidates'])} 篇，失败 {len(result['failures'])} 篇")
     print(f"审核页：file://{review_path}")
+    return review_path
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='小红书每日流水线。prepare 取新闻，build 出图，auto 用 DeepSeek 一段跑完。'
+    )
+    parser.add_argument('command', choices=['prepare', 'build', 'auto'])
+    parser.add_argument('--date', default=None, help='YYYY-MM-DD，默认取美东当天')
+    parser.add_argument(
+        '--source', choices=['api', 'db'], default='api',
+        help='prepare 的数据来源：api 走公开接口（无需数据库凭据），db 走 MongoDB'
+    )
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO)
+    date_str = args.date or today_eastern()
+
+    if args.command == 'prepare':
+        cmd_prepare(date_str, args.source)
+    elif args.command == 'build':
+        cmd_build(date_str)
+    else:
+        cmd_auto(date_str)
 
 
 if __name__ == '__main__':

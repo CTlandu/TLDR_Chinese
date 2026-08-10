@@ -7,7 +7,7 @@
 
 ## 前置条件
 
-- 当天流水线已经跑过：`./venv/bin/python scripts/xhs/run_daily.py`
+- 当天流水线已经跑过（`prepare` → 会话里排序写文案 → `build`，或者 `auto`）
 - 产物在 `scripts/xhs/output/<日期>/<序号>/`，含 `01.png`…`04.png` 和 `note.json`
 - ego-browser 可用，且用户的小红书登录态在浏览器里是有效的
 
