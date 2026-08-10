@@ -1,0 +1,17 @@
+# 小红书流水线的本地依赖。
+#
+# 不要合并进根目录的 requirements.txt —— 那份是 Vercel 装 serverless 依赖用的，
+# Playwright 进去只会白白撑大部署包，而渲染和发布本来就跑不了 serverless。
+#
+# 首次安装：
+#   python3 -m venv venv
+#   ./venv/bin/pip install -r scripts/xhs/requirements-local.txt
+#   ./venv/bin/playwright install chromium
+#
+# 运行：
+#   ./venv/bin/python scripts/xhs/run_daily.py
+
+openai>=1.0.0
+requests>=2.31.0
+playwright>=1.40.0
+pytest>=8.0.0

@@ -1,0 +1,123 @@
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1080px;
+    height: 1440px;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: #12100F;
+    color: #F5F1EC;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .backdrop {
+    position: absolute;
+    inset: 0;
+    background-image: {{BACKDROP_IMAGE}};
+    background-size: cover;
+    background-position: center;
+    /* 原图来源不可控（截图、图表、海报都可能），虚化 + 降饱和让它退成纹理，
+       而不是跟封面文字抢注意力。scale 是为了盖住 blur 在边缘留下的透明羽化 */
+    filter: saturate(0.7) blur(6px);
+    transform: scale(1.08);
+  }
+
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: {{SCRIM}};
+  }
+
+  .frame {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 96px 88px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 30px;
+    letter-spacing: 0.08em;
+    color: rgba(245, 241, 236, 0.72);
+  }
+
+  .brand .dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #E8503A;
+    flex: none;
+  }
+
+  .stage {
+    flex: 1;
+    /* min-height:0 是必须的：flex 子项默认 min-height:auto 会被内容撑开，
+       文字溢出到画布外被裁掉，而不是留在可检测的滚动高度里 */
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: {{STAGE_ALIGN}};
+    padding: 72px 0;
+  }
+
+  .text {
+    font-size: {{FONT_SIZE}};
+    line-height: {{LINE_HEIGHT}};
+    font-weight: {{FONT_WEIGHT}};
+    letter-spacing: {{TRACKING}};
+    white-space: pre-wrap;
+    text-wrap: balance;
+  }
+
+  .rule {
+    width: 108px;
+    height: 6px;
+    background: #E8503A;
+    margin-bottom: 44px;
+  }
+
+  .footer {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 26px;
+    color: rgba(245, 241, 236, 0.5);
+    letter-spacing: 0.06em;
+  }
+
+  .counter {
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+
+<div class="backdrop"></div>
+<div class="scrim"></div>
+
+<div class="frame">
+  <div class="brand">
+    <span class="dot"></span>
+    <span>TLDR 科技日报</span>
+  </div>
+
+  <div class="stage">
+    {{RULE}}
+    <div class="text">{{TEXT}}</div>
+  </div>
+
+  <div class="footer">
+    <span>{{FOOTER}}</span>
+    <span class="counter">{{COUNTER}}</span>
+  </div>
+</div>
