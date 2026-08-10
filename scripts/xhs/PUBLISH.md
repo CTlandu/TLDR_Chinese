@@ -1,125 +1,160 @@
 # 小红书发布规程
 
-> **状态：选择器尚未经过真实发布验证。**
-> 下面的流程基于 ego-browser 的 helper 契约和小红书创作平台的公开发布流程写成，
-> 但没有真的发过一篇。第一次发布必须有人在旁边看着，逐条确认下方「首次验证清单」，
-> 把实际的按钮文案和输入框定位方式回填进来之后，再删掉这段提示。
+选择器和步骤在 2026-08-10 用真实账号走到了发布按钮前一步，全部实测过。**发布按钮本身尚未点过**，点下去之后的确认页长什么样、成功后跳转到哪，还是未知。
 
 ## 前置条件
 
-- 当天流水线已经跑过（`prepare` → 会话里排序写文案 → `build`，或者 `auto`）
-- 产物在 `scripts/xhs/output/<日期>/<序号>/`，含 `01.png`…`04.png` 和 `note.json`
-- ego-browser 可用，且用户的小红书登录态在浏览器里是有效的
+- 当天流水线已经跑过（`prepare` → 会话里排序写文案 → `build`）
+- 产物在 `scripts/xhs/output/<日期>/<序号>/`，含 `01.png`…`05.png` 和 `note.json`
+- ego-browser 可用，小红书登录态有效
 
 ## 触发方式
 
-运营者在 Claude Code 会话里说「发第 N 篇」。没有定时发布，没有批量发布——
-每次发布都由人明确指定哪一篇。
+运营者在 Claude Code 会话里说「发第 N 篇」。没有定时发布，没有批量发布。
 
-## Task space 约定
+## Task space
 
-固定用 `xhs-publish` 这个名字，跨轮次复用同一个空间：
+固定用 `xhs-publish`，跨轮次复用：
 
 ```bash
 ego-browser nodejs <<'EOF'
 const task = await useOrCreateTaskSpace('xhs-publish')
-cliLog('task space id: ' + task.id)
 EOF
 ```
 
-后续每一轮 heredoc 都以 `useOrCreateTaskSpace('xhs-publish')` 开头。
-只有在用户交还控制权之后，才改用 `takeOverTaskSpace`。
+---
 
-## 发布步骤
-
-### 0. 读取产物
-
-先读 `scripts/xhs/output/<日期>/<序号>/note.json` 拿到标题、正文、标签和图片文件名。
-图片要用**绝对路径**传给 `uploadFile`。
+## 实测流程
 
 ### 1. 打开发布页并确认登录态
 
-```bash
-ego-browser nodejs <<'EOF'
-const task = await useOrCreateTaskSpace('xhs-publish')
-await openOrReuseTab('https://creator.xiaohongshu.com/publish/publish', { wait: true, timeout: 30 })
-cliLog(await pageInfo())
-cliLog(await snapshotText())
-EOF
+```js
+await openOrReuseTab('https://creator.xiaohongshu.com/publish/publish', { wait: true, timeout: 40 })
+await wait(4)
+const txt = await js(String.raw`document.body.innerText.slice(0, 300)`)
 ```
 
-从 snapshot 判断当前是发布页还是登录页。**看到登录页就立刻走「登录态失效」流程，不要尝试绕过。**
+文本里出现账号名（例如 `Colin兰度`）说明已登录。出现登录页立刻走「登录态失效」流程。
 
-### 2. 切到图文发布
+### 2. 切到「上传图文」
 
-创作平台默认可能停在「上传视频」。用可见文本定位切到图文那一栏——
-小红书前端的 class 名是混淆的，改版后文本比 class 稳定得多。
+页面默认停在「上传视频」。**`loc=text:上传图文` 不是合法选择器**，ego-browser 只认 `loc=css:` / `loc=role:` / `loc=href:` / `@N`。用 JS 点：
 
-```bash
-await click('loc=text:上传图文')
+```js
+await js(String.raw`
+  (() => {
+    const els = Array.from(document.querySelectorAll('span.title'))
+      .filter(e => e.innerText.trim() === '上传图文');
+    els[els.length - 1].click();
+    return true;
+  })()
+`)
 ```
 
-### 3. 上传图片
+页面有 6 个文本为「上传图文」的元素，取最后一个。
 
-按序号顺序逐张上传，保证封面是第一张：
+### 3. 上传图片：必须一次传完
 
-```bash
-ego-browser nodejs <<'EOF'
-const task = await useOrCreateTaskSpace('xhs-publish')
-const dir = '/绝对路径/scripts/xhs/output/2026-08-10/01'
-for (const name of ['01.png', '02.png', '03.png', '04.png']) {
-  await uploadFile('input[type="file"]', `${dir}/${name}`)
-  await wait(1)
-}
-cliLog(await snapshotText())
-EOF
+编辑区有三个 file input：
+
+| 位置 | accept | multiple | 用途 |
+|---|---|---|---|
+| `div.img-list` 第一个 | `.jpg,.jpeg,.png,.webp` | true | 批量上传 |
+| `div.img-list` 第二个 | 同上 | false | 单张替换 |
+| `.file-relation-container` | `.pdf,.doc,…` | false | 文档附件，无关 |
+
+```js
+const dir = '/绝对路径/scripts/xhs/output/2026-08-08/02'
+const files = ['01.png','02.png','03.png','04.png','05.png'].map(n => `${dir}/${n}`)
+await uploadFile('input[type="file"]', files)
+await wait(8)
 ```
 
-上传完必须用 snapshot 或截图确认张数和顺序都对，再往下走。
+**`uploadFile` 接受路径数组，一次传完。绝对不要循环单张上传**——单张上传的 change 事件是延迟生效的，循环 5 次的结果是 10 张（第一次 1 张 + 延迟到账的 4 张 + 后来的 5 张），而且当时查计数器只显示 1 张，看不出错。
+
+传完必须核对张数：
+
+```js
+await js(String.raw`
+  (() => {
+    const t = document.querySelector('.publish-page-content-media');
+    const m = (t ? t.innerText : '').match(/(\d+)\s*\/\s*18/);
+    return { counter: m ? m[0] : 'n/a', thumbs: document.querySelectorAll('div.img-list img').length };
+  })()
+`)
+```
+
+期望 `5/18` 和 5 张缩略图。数量不对就重载页面从头来，别在页面上删删补补。
+
+平台限制：单篇最多 18 张，单张最大 32MB，推荐 3:4 到 2:1、分辨率不低于 720×960。我们的 2160×2880 正好 3:4。
 
 ### 4. 填标题
 
-标题是普通 input，`fillInput` 应该可以直接写：
+普通 input，`fillInput` 直接可用：
 
-```bash
-await fillInput('loc=placeholder:填写标题', '<note.json 里的 title>')
+```js
+await fillInput('input[placeholder="填写标题会有更多赞哦"]', note.title)
 ```
 
-### 5. 填正文
+### 5. 填正文：必须用 JS 抢焦点
 
-**正文大概率是富文本编辑器，不要默认 `fillInput` 能写进去。**
-ego-browser 的指引里明确说了：富文本/虚拟化编辑器要先做一次小的写入探针，
-确认文字真的落在目标位置，否则改走视觉流程（截图 → `click([x, y])` → `typeText`）。
+正文是 TipTap 富文本（`div.tiptap.ProseMirror`）。**`click()` 点不进去，焦点会留在标题框上，`typeText` 的内容会追加到标题里**——这个坑踩过，标题变成了 `AI设计出了自然界没有的病毒探针`。按坐标点击同样无效。
 
-先探针，再写全文：
+唯一可靠的做法是 JS 直接 focus 并把光标塞到末尾：
 
-```bash
-await click('loc=placeholder:输入正文描述')
-await typeText('测试')
-// 截图确认「测试」两个字出现在正文区域，而不是别的地方
+```js
+const focusEnd = String.raw`
+  (() => {
+    const e = document.querySelector('div.tiptap.ProseMirror');
+    e.focus();
+    const r = document.createRange(); r.selectNodeContents(e); r.collapse(false);
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    return true;
+  })()
+`
+await js(focusEnd)
 ```
 
-探针通过后清空，再写完整正文。
+确认 `document.activeElement.className` 含 `ProseMirror-focused` 之后再输入。分段输入，段间敲 Enter：
 
-### 6. 标签
+```js
+const paras = body.split('\n\n')
+for (let i = 0; i < paras.length; i++) {
+  await typeText(paras[i])
+  if (i < paras.length - 1) { await pressKey('Enter'); await wait(1) }
+  await wait(1)
+}
+```
 
-小红书的话题标签通常要在正文区输入 `#关键词` 后从下拉里选中才算生效，
-直接把 `#标签` 当纯文本打进去可能不会关联话题。
-逐个输入并从下拉确认，每个之间留一点时间。
+正文文本不能靠 `process.env` 传进来（沙箱里拿不到 `process`）。用脚本把 JSON 编码后的字符串直接嵌进 heredoc。
 
-### 7. 发布前最后确认
+### 6. 话题标签：自动化不可靠，需要人工补
 
-发布是不可逆的。点发布按钮**之前**先截图，把图交给运营者确认：
+**这是唯一没能自动化成功的环节。**
 
-```bash
+在正文里打 `#关键词` 会触发一个话题下拉（`div.tippy-content .items .item`，每项带浏览量），点选之后正文里会变成真话题（`#科技[话题]#`）。但这个下拉**只在第一次触发成功，之后无论怎么试都不再出现**：换行再打、单独打 `#` 再打词、点 UI 上的「话题」按钮，全部无效。原因未查明。
+
+当前做法：把标签作为**纯文本**跟在正文末尾。
+
+```js
+await typeText('#科技 #人工智能 #AI #生物科技 #前沿科技 #科技资讯 #科普 #每日AI')
+```
+
+纯文本 `#标签` 在小红书上通常仍会被解析成话题，但不保证关联到官方话题页，影响的是发现流量。
+
+**如果要真话题标签，发布前由人手动在正文里点选一遍。** 这一步大概 30 秒，不值得为它继续跟自动化较劲。
+
+### 7. 发布前确认（强制）
+
+发布不可逆。点按钮**之前**先截图交给运营者：
+
+```js
 cliLog(await captureScreenshot())
 ```
 
-得到明确的「发」之后再点。
+得到明确的「发」之后再点。发布按钮在页面底部，文本 `发布`，旁边是 `暂存离开`（存草稿）。
 
 ### 8. 回写状态
-
-发布成功后把这条记录标成已发布：
 
 ```python
 from api.models.xhs_post import XhsPost, STATUS_PUBLISHED
@@ -131,56 +166,40 @@ post.published_at = datetime.utcnow()
 post.save()
 ```
 
+需要 MongoDB 凭据。`api` 数据源模式下才有 `XhsPost` 记录；`--source api` 跑出来的产物没有对应记录，这一步跳过。
+
 ### 9. 收尾
 
-```bash
-ego-browser nodejs <<'EOF'
+```js
 await completeTaskSpace('xhs-publish', { keep: false })
-EOF
 ```
+
+---
 
 ## 登录态失效
 
-Cookie 会周期性过期，频率未知。检测到未登录时：
-
-```bash
-ego-browser nodejs <<'EOF'
-const task = await useOrCreateTaskSpace('xhs-publish')
+```js
 const r = await handOffTaskSpace(task.id)
-cliLog(JSON.stringify(r))
-EOF
 ```
 
 然后明确告诉运营者：「小红书登录态失效了，浏览器控制权已经交给你，扫码登录后回一句『继续』。」
 
-等到运营者明确说继续，再 `takeOverTaskSpace('xhs-publish')` 续跑。
+等运营者明确说继续，再 `takeOverTaskSpace('xhs-publish')` 续跑。
 
 ## 绝对不做的事
 
-- **不自动重试。** 发布失败就停下来报告，重试可能造成重复发布。
-- **不自己 `takeOverTaskSpace` 抢回控制权。** 只有在运营者明确说继续之后才接管。
+- **不自动重试。** 发布失败就停下报告，重试可能造成重复发布。
+- **不自己 `takeOverTaskSpace` 抢回控制权。**
 - **不换账号、不改任何账号设置。**
-- **不把失败当成功回报。** 没有在页面上看到发布成功的确认，就是没成功。
+- **不把失败当成功回报。** 没在页面上看到发布成功的确认，就是没成功。
 - **不在没有人明确确认的情况下点发布按钮。**
 
 ## 人工兜底
 
-浏览器这条路挂了（页面改版、检测拦截、登录反复失效）随时可以放弃自动化：
-`scripts/xhs/output/<日期>/<序号>/` 里的 PNG 和 `note.json` 本身就是可以直接用的成品，
-AirDrop 到手机上手动发，五分钟的事。**不要为了跑通自动化而反复重试。**
+浏览器这条路挂了随时可以放弃：`scripts/xhs/output/<日期>/<序号>/` 里的 PNG 和 `note.json` 本身就是成品，AirDrop 到手机手动发，五分钟的事。不要为了跑通自动化反复重试。
 
-## 首次验证清单
+## 仍未验证
 
-第一次真实发布时逐条确认，然后把实际值回填到上面对应的步骤里：
-
-- [ ] 发布页的真实 URL（`/publish/publish` 是否还有效）
-- [ ] 「上传图文」入口的实际可见文本
-- [ ] 文件 input 的实际选择器，以及是否支持多选一次传完
-- [ ] 上传后图片顺序是否与传入顺序一致（封面必须是第一张）
-- [ ] 标题输入框的实际 placeholder 文案
-- [ ] 正文编辑器是不是富文本，`fillInput` 探针是否成功
-- [ ] 标签是在正文里打 `#` 触发下拉，还是有独立的标签输入区
-- [ ] 发布按钮的实际文案，以及点完之后的成功确认长什么样
-- [ ] 全程有没有触发验证码或风控提示
-
-验证完成后，删掉本文件顶部的状态提示，并把这份清单换成实际记录。
+- 点下「发布」之后的确认弹窗、成功提示、跳转目标
+- 是否会触发验证码或风控
+- 话题下拉为什么只触发一次
