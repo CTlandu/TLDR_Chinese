@@ -60,12 +60,18 @@ def is_usable_image(url: Optional[str], timeout: int = IMAGE_TIMEOUT) -> bool:
     if not url:
         return False
     try:
-        response = requests.head(
-            url,
-            headers={'User-Agent': USER_AGENT},
-            timeout=timeout,
-            allow_redirects=True
-        )
+        headers = {'User-Agent': USER_AGENT}
+        response = requests.head(url, headers=headers, timeout=timeout, allow_redirects=True)
+
+        # 有些 CDN 直接拒绝 HEAD。这时候用 GET 探一下头再断开，
+        # 否则会把本来能用的图误判成不可用。
+        if response.status_code in (403, 405, 501):
+            response = requests.get(
+                url, headers=headers, timeout=timeout,
+                allow_redirects=True, stream=True
+            )
+            response.close()
+
         if response.status_code != 200:
             logging.info(f"配图不可用（HTTP {response.status_code}）：{url}")
             return False

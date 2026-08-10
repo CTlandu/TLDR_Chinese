@@ -4,7 +4,7 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
@@ -222,7 +222,7 @@ def main():
 
     from api import create_app
     from api.models.article import DailyNewsletter
-    from api.models.xhs_post import XhsPost
+    from api.models.xhs_post import STATUS_DRAFTED, XhsPost
     from api.services.xhs_copywriter import XhsCopywriterService
     from api.services.xhs_dedup import filter_unpublished, seen_source_urls
     from api.services.xhs_scorer import XhsScorerService
@@ -237,6 +237,12 @@ def main():
         eastern = pytz.timezone('US/Eastern')
         today = datetime.now(eastern).date()
         date_str = today.strftime('%Y-%m-%d')
+
+        # 同一天重跑：先清掉今天还没发出去的草稿记录，否则去重会把它们当"已出稿"
+        # 全部滤掉，重跑只会得到一张空的审核页。已发布和已丢弃的记录不动。
+        discarded = XhsPost.objects(source_date=today, status=STATUS_DRAFTED).delete()
+        if discarded:
+            logger.info(f"重跑：清理今天的 {discarded} 条草稿记录")
 
         newsletter = DailyNewsletter.objects(date=today).first()
         articles = flatten_sections(newsletter.sections) if newsletter else []
@@ -257,15 +263,20 @@ def main():
 
         for candidate in result['candidates']:
             write_note_json(candidate)
-            XhsPost(
-                source_url=candidate['source_url'],
-                source_date=today,
-                source_title=candidate['source_title'],
-                title=candidate['note'].get('title'),
-                body=candidate['note'].get('body'),
-                tags=candidate['note'].get('tags', []),
-                output_dir=str(candidate['out_dir']),
-            ).save()
+            try:
+                XhsPost(
+                    source_url=candidate['source_url'],
+                    source_date=today,
+                    source_title=candidate['source_title'],
+                    title=candidate['note'].get('title'),
+                    body=candidate['note'].get('body'),
+                    tags=candidate['note'].get('tags', []),
+                    output_dir=str(candidate['out_dir']),
+                ).save()
+            except Exception as e:
+                # 出稿记录写失败不该让整批白跑——图和文案已经落盘了，
+                # 代价只是这条新闻明天可能再被选一次。
+                logger.error(f"第 {candidate['index']} 条出稿记录写入失败：{str(e)}")
 
         review_path = render_review_page(
             result, OUTPUT_ROOT / date_str / 'review.html'

@@ -75,6 +75,44 @@ def test_timeout_degrades_and_forwards_the_timeout_value(monkeypatch):
     assert seen['timeout'] == 3
 
 
+@pytest.mark.parametrize('status', [403, 405, 501])
+def test_head_rejection_falls_back_to_get(monkeypatch, status):
+    calls = []
+
+    def fake_head(url, **kw):
+        calls.append('head')
+        return _head(status=status)
+
+    def fake_get(url, **kw):
+        calls.append('get')
+        assert kw.get('stream') is True
+        return SimpleNamespace(
+            status_code=200,
+            headers={'Content-Type': 'image/png'},
+            close=lambda: calls.append('close'),
+        )
+
+    monkeypatch.setattr(render.requests, 'head', fake_head)
+    monkeypatch.setattr(render.requests, 'get', fake_get)
+
+    assert render.is_usable_image('https://cdn.example/a.png') is True
+    assert calls == ['head', 'get', 'close']
+
+
+def test_get_fallback_still_rejects_non_images(monkeypatch):
+    monkeypatch.setattr(render.requests, 'head', lambda url, **kw: _head(status=405))
+    monkeypatch.setattr(
+        render.requests, 'get',
+        lambda url, **kw: SimpleNamespace(
+            status_code=200,
+            headers={'Content-Type': 'text/html'},
+            close=lambda: None,
+        )
+    )
+
+    assert render.is_usable_image('https://cdn.example/page') is False
+
+
 def test_card_html_escapes_user_text():
     html = render.build_card_html('body', '<script>alert(1)</script> & 收工')
 
