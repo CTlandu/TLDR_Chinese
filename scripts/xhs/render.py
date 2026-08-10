@@ -109,7 +109,10 @@ def build_card_html(
 
     media = ''
     if variant == 'cover' and image_url:
-        media = f'<div class="media" style="background-image: {_css_url(image_url)}"></div>'
+        # 内联 style 属性本身用双引号包着，url("...") 里的双引号会把属性提前截断，
+        # CSS 最后拿到的是空地址。转义之后 HTML 解析器会还原成正确的双引号。
+        style = html_lib.escape(f'background-image: {_css_url(image_url)}', quote=True)
+        media = f'<div class="media" style="{style}"></div>'
 
     rule = '<div class="rule"></div>' if variant == 'cover' else ''
 

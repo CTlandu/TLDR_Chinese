@@ -125,9 +125,30 @@ def test_cover_variant_embeds_image_and_body_variant_does_not():
     cover = render.build_card_html('cover', '钩子', image_url='https://img.example/a.jpg')
     body = render.build_card_html('body', '正文')
 
-    assert 'url("https://img.example/a.jpg")' in cover
+    assert 'https://img.example/a.jpg' in cover
     assert 'class="media"' in cover
     assert 'class="media"' not in body
+
+
+def test_inline_style_quotes_do_not_truncate_the_attribute():
+    """url("...") 里的双引号如果不转义，会把 style 属性提前关掉，CSS 拿到空地址。"""
+    from playwright.sync_api import sync_playwright
+
+    url = 'https://img.example/a.jpg'
+    html = render.build_card_html('cover', '钩子', image_url=url)
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        try:
+            page.set_content(html)
+            computed = page.evaluate(
+                '() => getComputedStyle(document.querySelector(".media")).backgroundImage'
+            )
+        finally:
+            browser.close()
+
+    assert url in computed
 
 
 def test_cover_without_image_has_no_media_block():
