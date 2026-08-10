@@ -12,7 +12,10 @@ DEVICE_SCALE = 2
 # 每天最多 3 张封面，宁可多等也不要把能用的图误判掉。
 IMAGE_TIMEOUT = 15
 
-FOOTER_TEXT = 'tldrnewsletter.cn'
+SITE = 'tldrnewsletter.cn'
+OUTRO_LEAD = '每天一份北美科技简报\n中英对照，五分钟读完'
+OUTRO_NOTE = '完全免费，不用注册'
+
 USER_AGENT = (
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
     '(KHTML, like Gecko) Chrome/120.0 Safari/537.36'
@@ -20,38 +23,24 @@ USER_AGENT = (
 
 TEMPLATE_PATH = Path(__file__).parent / 'templates' / 'card.html'
 
-COVER_STYLE = {
-    'STAGE_ALIGN': 'flex-end',
-    'FONT_SIZE': '84px',
-    'LINE_HEIGHT': '1.28',
-    'FONT_WEIGHT': '700',
-    'TRACKING': '-0.02em',
-    'RULE': '<div class="rule"></div>',
-}
-
-BODY_STYLE = {
-    'STAGE_ALIGN': 'center',
-    'FONT_SIZE': '52px',
-    'LINE_HEIGHT': '1.72',
-    'FONT_WEIGHT': '400',
-    'TRACKING': '0',
-    'RULE': '',
-}
-
-# 有配图时压一层从下往上的深色渐变，保证白字始终压得住背景
-SCRIM_WITH_IMAGE = (
-    'linear-gradient(180deg, rgba(18,16,15,0.70) 0%, '
-    'rgba(18,16,15,0.58) 38%, rgba(18,16,15,0.96) 100%)'
-)
-SCRIM_PLAIN = (
-    'radial-gradient(120% 80% at 15% 0%, rgba(232,80,58,0.16) 0%, '
-    'rgba(18,16,15,0) 60%)'
-)
-
 _OVERFLOW_PROBE = """() => {
-  const stage = document.querySelector('.stage');
-  return stage.scrollHeight > stage.clientHeight + 1;
+  const panel = document.querySelector('.panel');
+  return panel.scrollHeight > panel.clientHeight + 1;
 }"""
+
+# HEAD 探测通过不代表浏览器真能把图渲染出来（证书、防盗链、网络抖动都会让它挂）。
+# 挂了的话 .media 只剩兜底底色，封面上方会是一块灰，比没有图更难看。
+_MEDIA_LOADED_PROBE = """() => new Promise(resolve => {
+  const el = document.querySelector('.media');
+  if (!el) return resolve(true);
+  const raw = getComputedStyle(el).backgroundImage;
+  const match = raw.match(/url\\((['"]?)(.*?)\\1\\)/);
+  if (!match) return resolve(false);
+  const probe = new Image();
+  probe.onload = () => resolve(true);
+  probe.onerror = () => resolve(false);
+  probe.src = match[2];
+})"""
 
 
 def is_usable_image(url: Optional[str], timeout: int = IMAGE_TIMEOUT) -> bool:
@@ -95,46 +84,55 @@ def _css_url(url: str) -> str:
     return f'url("{safe}")'
 
 
+def _wrap(body: str) -> str:
+    return TEMPLATE_PATH.read_text(encoding='utf-8').replace('{{BODY}}', body)
+
+
 def build_card_html(
     variant: str,
-    text: str,
-    counter: str = '',
+    text: str = '',
     image_url: Optional[str] = None,
 ) -> str:
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    style = COVER_STYLE if variant == 'cover' else BODY_STYLE
+    """三种版式：cover 封面钩子、body 正文、outro 引流。
 
-    values = dict(style)
-    values['TEXT'] = html_lib.escape(text)
-    values['FOOTER'] = FOOTER_TEXT
-    values['COUNTER'] = counter
-    values['BACKDROP_IMAGE'] = _css_url(image_url) if image_url else 'none'
-    values['SCRIM'] = SCRIM_WITH_IMAGE if image_url else SCRIM_PLAIN
+    卡面上不放任何品牌水印——小红书对满屏水印的内容判定为营销号，
+    引流集中放在最后一张 outro 卡上。
+    """
+    if variant == 'outro':
+        return _wrap(
+            '<div class="panel outro">'
+            f'<div class="lead">{html_lib.escape(OUTRO_LEAD)}</div>'
+            f'<div class="site">{html_lib.escape(SITE)}</div>'
+            f'<div class="note">{html_lib.escape(OUTRO_NOTE)}</div>'
+            '</div>'
+        )
 
-    for key, value in values.items():
-        template = template.replace('{{' + key + '}}', value)
+    media = ''
+    if variant == 'cover' and image_url:
+        media = f'<div class="media" style="background-image: {_css_url(image_url)}"></div>'
 
-    return template
+    rule = '<div class="rule"></div>' if variant == 'cover' else ''
+
+    return _wrap(
+        f'{media}'
+        f'<div class="panel {variant}">'
+        f'{rule}'
+        f'<div class="text">{html_lib.escape(text)}</div>'
+        '</div>'
+    )
 
 
 def build_note_pages(note: Dict, image_url: Optional[str] = None) -> List[str]:
-    """把一篇笔记摊成待截图的 HTML 列表：1 张封面 + N 张正文卡。"""
-    cards = note.get('cards') or []
-    total = len(cards) + 1
-
+    """摊成待截图的 HTML 列表：1 张封面 + N 张正文 + 1 张引流卡。"""
     pages = [
         build_card_html(
             'cover',
             note.get('cover_hook') or note.get('title', ''),
-            counter=f'01 / {total:02d}',
             image_url=image_url,
         )
     ]
-    for index, card in enumerate(cards, start=2):
-        pages.append(
-            build_card_html('body', card, counter=f'{index:02d} / {total:02d}')
-        )
-
+    pages.extend(build_card_html('body', card) for card in note.get('cards') or [])
+    pages.append(build_card_html('outro'))
     return pages
 
 
@@ -178,6 +176,7 @@ def render_note(note: Dict, out_dir, image_url: Optional[str] = None) -> List[Pa
     if image_url and not usable:
         logging.info('配图不可用，封面降级为纯排版')
 
+    cover_text = note.get('cover_hook') or note.get('title', '')
     pages = build_note_pages(note, image_url if usable else None)
     paths: List[Path] = []
 
@@ -187,6 +186,11 @@ def render_note(note: Dict, out_dir, image_url: Optional[str] = None) -> List[Pa
         try:
             for index, html in enumerate(pages, start=1):
                 _settle(page, html)
+
+                if 'class="media"' in html and not page.evaluate(_MEDIA_LOADED_PROBE):
+                    logging.info('配图在浏览器里没加载出来，封面改用纯排版')
+                    _settle(page, build_card_html('cover', cover_text))
+
                 if page.evaluate(_OVERFLOW_PROBE):
                     logging.warning(f"第 {index} 张卡片文字溢出，检查文案长度")
 
