@@ -29,9 +29,34 @@ NOTES_FILENAME = 'notes.json'
 logger = logging.getLogger(__name__)
 
 
+SOURCE_PREFIX = '来源：'
+
+
 def source_label(url: str) -> str:
-    from article_fetcher import source_label as _label
-    return _label(url)
+    """卡片左下角标注的出处，用可读的短形式（域名 + 路径）。"""
+    from article_fetcher import display_url
+    return display_url(url)
+
+
+def append_source(note: Dict, url: str) -> Dict:
+    """把来源链接追加到正文末尾，让人能直接复制。
+
+    这里用带 token 的完整链接（只清掉跟踪参数），它才是真能打开原文的那个。
+    """
+    from article_fetcher import clean_url
+
+    if not url:
+        return note
+
+    note = dict(note)
+    line = f'{SOURCE_PREFIX}{clean_url(url)}'
+    if line not in note.get('body', ''):
+        note['body'] = f"{note.get('body', '').rstrip()}\n\n{line}"
+
+    if len(note['body']) > BODY_LIMIT:
+        logger.warning(f"正文加上来源后 {len(note['body'])} 字符，超过 {BODY_LIMIT}")
+
+    return note
 
 
 def flatten_sections(sections) -> List[Dict]:
@@ -381,7 +406,7 @@ def cmd_build(date_str: str) -> Path:
     picks = json.loads((day_dir / NOTES_FILENAME).read_text(encoding='utf-8'))['picks']
 
     picks = [
-        {**pick, 'note': normalize_note(pick['note'])}
+        {**pick, 'note': append_source(normalize_note(pick['note']), pick['url'])}
         for pick in picks if pick.get('note')
     ]
     logger.info(f"读到 {len(picks)} 篇已排好的文案")

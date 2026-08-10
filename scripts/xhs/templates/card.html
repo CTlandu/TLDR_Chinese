@@ -35,14 +35,22 @@
     position: relative;
   }
 
-  /* 出处标注。这是给读者的信息，不是品牌水印 */
+  /* 出处标注，放完整文章链接。这是给读者的信息，不是品牌水印。
+     长 URL 允许折成两行，再长就截断——版面优先，正文底部有可复制的完整地址 */
   .source {
     position: absolute;
     left: 80px;
-    bottom: 60px;
-    font-size: 26px;
-    letter-spacing: 0.04em;
-    color: #9A928A;
+    right: 80px;
+    bottom: 52px;
+    font-size: 22px;
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+    color: #A29A92;
+    word-break: break-all;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   /* 封面文字居中而不是贴底。无配图时贴底会在上方留出三分之二的空白，

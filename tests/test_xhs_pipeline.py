@@ -277,13 +277,57 @@ def test_source_label_is_passed_through_to_the_renderer(tmp_path):
 
     run(articles(2), tmp_path, render_fn=recording_render)
 
-    assert seen == ['a.example', 'a.example']
+    assert seen == ['a.example/1', 'a.example/2']
 
 
-def test_source_label_strips_www_and_path():
-    assert pipeline.source_label('https://www.nytimes.com/2026/08/06/science/x.html') == 'nytimes.com'
-    assert pipeline.source_label('https://spyglass.org/you-are-the-tokens/?utm=x') == 'spyglass.org'
-    assert pipeline.source_label('') == ''
+def test_card_label_is_readable_not_a_wall_of_base64():
+    """图上的链接点不了，它的活儿是公信力。四百字符的 token 铺上去是反效果。"""
+    url = (
+        'https://www.bloomberg.com/news/articles/2026-08-06/what-is-openai-s-device'
+        '?accessToken=' + 'eyJhbGciOiJIUzI1NiJ9' * 20
+    )
+
+    label = pipeline.source_label(url)
+
+    assert label == 'bloomberg.com/news/articles/2026-08-06/what-is-openai-s-device'
+    assert 'accessToken' not in label
+    assert len(label) < 80
+
+
+def test_body_keeps_the_paywall_unlocking_token():
+    """accessToken / unlocked_article_code 是免付费墙的钥匙，不能当跟踪参数删掉。"""
+    url = (
+        'https://www.nytimes.com/2026/08/06/science/x.html'
+        '?unlocked_article_code=1.3lA.pm4x&smid=url-share&utm_source=tldrnewsletter'
+    )
+
+    body = pipeline.append_source({'body': '正文。'}, url)['body']
+
+    assert 'unlocked_article_code=1.3lA.pm4x' in body
+    assert 'utm_source' not in body
+    assert 'smid' not in body
+
+
+def test_source_line_is_appended_to_the_body():
+    url = 'https://spyglass.org/you-are-the-tokens/'
+    note = pipeline.append_source({'body': '正文内容。'}, url)
+
+    assert note['body'].endswith(f'来源：{url}')
+    assert note['body'].startswith('正文内容。')
+
+
+def test_source_line_is_not_appended_twice():
+    url = 'https://spyglass.org/you-are-the-tokens/'
+    once = pipeline.append_source({'body': '正文。'}, url)
+    twice = pipeline.append_source(once, url)
+
+    assert twice['body'].count(url) == 1
+
+
+def test_append_source_is_a_noop_without_url():
+    note = {'body': '正文。'}
+
+    assert pipeline.append_source(note, '')['body'] == '正文。'
 
 
 def test_attach_source_text_marks_unfetchable_articles_as_empty(monkeypatch):
