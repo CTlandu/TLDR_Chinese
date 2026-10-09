@@ -18,8 +18,7 @@ from .services.unsubscribe_feedback import clean_comment, clean_reasons
 from .models.subscriber import Subscriber
 from bson import ObjectId
 import secrets
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from . import limiter
 import re
 import disposable_email_domains
 import requests
@@ -306,14 +305,6 @@ def get_wechat_newsletter(date):
 # Subscription Routes  #
 ########################
 
-# 创建限流器
-limiter = Limiter(
-    app=None,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"  # 使用内存存储，也可以配置 redis
-)
-
 # 常用邮箱域名后缀白名单
 VALID_EMAIL_SUFFIXES = {
     # 教育机构
@@ -366,7 +357,7 @@ def is_disposable_email(email):
                 return False
                 
         # 3. 如果都不匹配，再检查是否是一次性邮箱
-        return domain in disposable_email_domains.emails
+        return domain in disposable_email_domains.blacklist
         
     except Exception as e:
         logging.error(f"Error checking disposable email: {str(e)}")
