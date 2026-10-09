@@ -42,8 +42,9 @@ MONGODB_URI=mongodb+srv://your_username:your_password@cluster.mongodb.net/
 
 # API Keys（如果需要测试完整功能）
 DEEPSEEK_API_KEY=your_key_here
-MAILGUN_API_KEY=your_key_here
-MAILGUN_DOMAIN=your_domain_here
+RESEND_API_KEY=your_key_here
+RESEND_SEGMENT_ID=your_segment_id_here
+MAIL_FROM_DOMAIN=tldrnewsletter.cn
 
 # 本地开发 URLs
 FRONTEND_URL=http://localhost:5173
@@ -187,7 +188,7 @@ python run.py
 
 # 运行测试脚本
 python scripts/test_mongodb.py
-python scripts/test_mailgun.py
+python scripts/sync_resend_contacts.py  # 默认 dry-run，--apply 才真正同步
 ```
 
 ---
@@ -318,8 +319,9 @@ curl -X POST http://localhost:5000/api/subscribe \
 
 ### 可选的环境变量（用于完整功能）
 - `DEEPSEEK_API_KEY` - DeepSeek AI 翻译
-- `MAILGUN_API_KEY` - 邮件发送
-- `MAILGUN_DOMAIN` - Mailgun 域名
+- `RESEND_API_KEY` - 邮件发送（Resend）
+- `RESEND_SEGMENT_ID` - 每日简报的 Resend segment
+- `MAIL_FROM_DOMAIN` - 发信域名，默认 `tldrnewsletter.cn`
 - `NEWSLETTER_API_KEY` - Newsletter API
 - `ERNIE_API_KEY` - 文心一言 API
 - `ERNIE_SECRET_KEY` - 文心一言密钥

@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask_mongoengine import MongoEngine
 from flaskext.markdown import Markdown
 from config import Config
@@ -9,8 +9,13 @@ from flask_limiter.util import get_remote_address
 
 db = MongoEngine()
 
+def _client_ip():
+    # Vercel 上 remote_addr 是代理地址，真实客户端 IP 在 X-Real-IP（由 Vercel 写入，客户端伪造不了）
+    return request.headers.get('X-Real-IP') or get_remote_address()
+
+
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=_client_ip,
     storage_uri="memory://"
 )
 

@@ -55,8 +55,9 @@ Vercel 会自动检测到：
 | 变量名 | 说明 | 示例值 |
 |--------|------|--------|
 | `MONGODB_URI` | MongoDB 连接字符串 | `mongodb+srv://user:pass@cluster.mongodb.net/tldrchinese` |
-| `MAILGUN_API_KEY` | Mailgun API 密钥 | `key-xxxxxxxxxxxxx` |
-| `MAILGUN_DOMAIN` | Mailgun 域名 | `mg.yourdomain.com` |
+| `RESEND_API_KEY` | Resend API 密钥（Full access） | `re_xxxxxxxxxxxxx` |
+| `RESEND_SEGMENT_ID` | 每日简报发送用的 Resend segment id | `78261eea-...` |
+| `MAIL_FROM_DOMAIN` | 发信域名（需在 Resend 验证） | `tldrnewsletter.cn` |
 | `DEEPSEEK_API_KEY` | DeepSeek API 密钥 | `sk-xxxxxxxxxxxxx` |
 | `ERNIE_API_KEY` | 百度文心一言 API Key | `your-api-key` |
 | `ERNIE_SECRET_KEY` | 百度文心一言 Secret Key | `your-secret-key` |
@@ -119,8 +120,9 @@ vercel --prod
 ```bash
 # 设置生产环境变量
 vercel env add MONGODB_URI production
-vercel env add MAILGUN_API_KEY production
-vercel env add MAILGUN_DOMAIN production
+vercel env add RESEND_API_KEY production
+vercel env add RESEND_SEGMENT_ID production
+vercel env add MAIL_FROM_DOMAIN production
 # ... 依此类推
 ```
 

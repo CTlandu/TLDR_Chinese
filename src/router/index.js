@@ -5,6 +5,7 @@ import SubscriptionSuccess from '../views/SubscriptionSuccess.vue';
 import SubscriptionError from '../views/SubscriptionError.vue';
 import NotFound from '../views/NotFound.vue';
 import UnsubscribedView from '../views/UnsubscribedView.vue';
+import UnsubscribeView from '../views/UnsubscribeView.vue';
 
 const routes = [
   {
@@ -26,6 +27,11 @@ const routes = [
     path: '/subscription/error',
     name: 'SubscriptionError',
     component: SubscriptionError,
+  },
+  {
+    path: '/unsubscribe',
+    name: 'UnsubscribeView',
+    component: UnsubscribeView,
   },
   {
     path: '/unsubscribed',

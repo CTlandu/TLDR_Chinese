@@ -22,8 +22,9 @@ class BaseConfig:
         'ssl': True,
         'tlsInsecure': True
     }
-    MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY')
-    MAILGUN_DOMAIN = os.environ.get('MAILGUN_DOMAIN')
+    RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
+    RESEND_SEGMENT_ID = os.environ.get('RESEND_SEGMENT_ID')
+    MAIL_FROM_DOMAIN = os.environ.get('MAIL_FROM_DOMAIN', 'tldrnewsletter.cn')
     FRONTEND_URL = os.environ.get('FRONTEND_URL')
     BACKEND_URL = os.environ.get('BACKEND_URL')
     NEWSLETTER_API_KEY = os.environ.get('NEWSLETTER_API_KEY')

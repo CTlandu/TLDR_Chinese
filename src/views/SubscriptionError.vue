@@ -49,6 +49,8 @@ export default {
     // 根据不同的错误消息显示不同的提示
     if (message === 'invalid_token') {
       this.message = '无效的确认链接。\n请重新尝试订阅。';
+    } else if (message === 'server_error') {
+      this.message = '服务暂时出了点问题，订阅还没确认。\n请稍后再点一次邮件里的确认链接。';
     }
   },
 };

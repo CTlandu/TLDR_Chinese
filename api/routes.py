@@ -7,11 +7,18 @@ from .services.emoji_mapper import get_section_emoji, clean_reading_time, get_ti
 from .models.article import DailyNewsletter
 import logging
 from flask import make_response
-from .services.mailgun_service import MailgunService
+from .services.resend_client import ResendClient
+from .services.newsletter_email import (
+    UNSUBSCRIBE_TOKEN_PLACEHOLDER,
+    confirmation_email_html,
+    generate_newsletter_html,
+)
+from .services.subscriber_sync import run_sync
+from .services.unsubscribe_feedback import clean_comment, clean_reasons
 from .models.subscriber import Subscriber
+from bson import ObjectId
 import secrets
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from . import limiter
 import re
 import disposable_email_domains
 import requests
@@ -298,14 +305,6 @@ def get_wechat_newsletter(date):
 # Subscription Routes  #
 ########################
 
-# 创建限流器
-limiter = Limiter(
-    app=None,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"  # 使用内存存储，也可以配置 redis
-)
-
 # 常用邮箱域名后缀白名单
 VALID_EMAIL_SUFFIXES = {
     # 教育机构
@@ -358,7 +357,7 @@ def is_disposable_email(email):
                 return False
                 
         # 3. 如果都不匹配，再检查是否是一次性邮箱
-        return domain in disposable_email_domains.emails
+        return domain in disposable_email_domains.blacklist
         
     except Exception as e:
         logging.error(f"Error checking disposable email: {str(e)}")
@@ -372,6 +371,25 @@ def is_valid_email(email):
     # 检查域名部分是否包含至少一个点号
     domain = email.split('@')[1]
     return '.' in domain
+
+
+def _resend():
+    return ResendClient(
+        current_app.config['RESEND_API_KEY'],
+        current_app.config['RESEND_SEGMENT_ID'],
+        current_app.config['MAIL_FROM_DOMAIN'],
+    )
+
+
+def _send_confirmation_email(email, confirmation_link):
+    _resend().send_email(
+        email,
+        '确认订阅 【太长不看】 科技日推',
+        confirmation_email_html(confirmation_link),
+        from_name='【太长不看】科技日推',
+        from_local='confirm',
+    )
+
 
 @bp.route('/api/subscribe', methods=['POST'])
 @limiter.limit("5 per hour")  # 每小时限制5次订阅请求
@@ -396,29 +414,31 @@ def subscribe():
         existing_subscriber = Subscriber.objects(email=email).first()
         
         if existing_subscriber:
-            if existing_subscriber.confirmed:
+            if existing_subscriber.is_subscribed:
                 return jsonify({'error': '该邮箱已订阅'}), 400
-            else:
-                # 重新发送确认邮件的逻辑...
-                confirmation_link = url_for(
-                    'main.confirm_subscription',
-                    token=existing_subscriber.confirmation_token,
-                    _external=True
-                )
+
+            if existing_subscriber.confirmed:
+                # 之前退订过：重置成待确认，重新走一遍 double opt-in
+                existing_subscriber.confirmed = False
+                existing_subscriber.is_active = True
+                existing_subscriber.confirmation_token = secrets.token_urlsafe(32)
+                existing_subscriber.save()
                 
-                mailgun = MailgunService(
-                    current_app.config['MAILGUN_API_KEY'],
-                    current_app.config['MAILGUN_DOMAIN']
-                )
-                
-                mailgun.send_confirmation_email(email, confirmation_link)
-                return jsonify({'message': '确认邮件已重新发送，请查收'})
+            # 重新发送确认邮件的逻辑...
+            confirmation_link = url_for(
+                'main.confirm_subscription',
+                token=existing_subscriber.confirmation_token,
+                _external=True
+            )
+            _send_confirmation_email(email, confirmation_link)
+            return jsonify({'message': '确认邮件已重新发送，请查收'})
         
         # 创建新订阅者
         confirmation_token = secrets.token_urlsafe(32)
         subscriber = Subscriber(
             email=email,
-            confirmation_token=confirmation_token
+            confirmation_token=confirmation_token,
+            unsubscribe_token=secrets.token_urlsafe(32)
         )
         subscriber.save()
         
@@ -428,13 +448,7 @@ def subscribe():
             token=confirmation_token,
             _external=True
         )
-        
-        mailgun = MailgunService(
-            current_app.config['MAILGUN_API_KEY'],
-            current_app.config['MAILGUN_DOMAIN']
-        )
-        
-        mailgun.send_confirmation_email(email, confirmation_link)
+        _send_confirmation_email(email, confirmation_link)
         
         return jsonify({
             'message': '确认邮件已发送，请查收并点击确认链接完成订阅'
@@ -465,6 +479,10 @@ def confirm_subscription(token):
             logging.info(f"Redirecting to: {redirect_url}")
             return redirect(redirect_url)
             
+        # 先在 Resend 设成订阅、成功了才改 Mongo。同步规则 1（Resend 退订 → Mongo 标退订）
+        # 依赖"Mongo 里 confirmed 的人在 Resend 一定被设成过订阅"，所以这里失败就整体失败
+        unsubscribe_token = subscriber.ensure_unsubscribe_token()
+        _resend().subscribe_contact(subscriber.email, unsubscribe_token)
         subscriber.confirm_subscription()
         
         redirect_url = f"{frontend_url}/subscription/success?verified=true&token={token}"
@@ -473,40 +491,76 @@ def confirm_subscription(token):
         
     except Exception as e:
         logging.error(f"Confirmation error: {str(e)}")
-        return redirect(f"{frontend_url}/subscription/error")
+        return redirect(f"{frontend_url}/subscription/error?message=server_error")
     
     
 @bp.route('/api/unsubscribe/<subscriber_id>',methods=['GET'])
 def unsubscribe(subscriber_id):
+    """老 Mailgun 邮件里的退订链接。只跳转到退订页，不改订阅状态：邮箱的链接安全扫描器会预先访问 GET 链接"""
+    frontend_url = current_app.config['FRONTEND_URL']
+    subscriber = Subscriber.objects(id=subscriber_id).first() if ObjectId.is_valid(subscriber_id) else None
+    if not subscriber:
+        return redirect(f"{frontend_url}/unsubscribe")
+    return redirect(f"{frontend_url}/unsubscribe?token={subscriber.ensure_unsubscribe_token()}")
+
+
+def _find_by_unsubscribe_token(token):
+    # 只接受字符串，挡掉 {"$ne": null} 这类查询注入
+    if not isinstance(token, str) or not token:
+        return None
+    return Subscriber.objects(unsubscribe_token=token).first()
+
+
+@bp.route('/api/unsubscribe-status', methods=['GET'])
+def unsubscribe_status():
+    subscriber = _find_by_unsubscribe_token(request.args.get('token'))
+    if not subscriber:
+        return jsonify({'valid': False, 'already_unsubscribed': False})
+    return jsonify({'valid': True, 'already_unsubscribed': not subscriber.is_subscribed})
+
+
+@bp.route('/api/unsubscribe', methods=['POST'])
+@limiter.limit("20 per hour")
+def unsubscribe_by_token():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': '请求格式错误'}), 400
+
+    subscriber = _find_by_unsubscribe_token(data.get('token'))
+    if not subscriber:
+        return jsonify({'error': '链接无效或已过期'}), 404
+    if not subscriber.is_subscribed:
+        return jsonify({'already': True})
+
+    subscriber.unsubscribe(
+        source='page',
+        reasons=clean_reasons(data.get('reasons')),
+        comment=clean_comment(data.get('comment')),
+    )
     try:
-        # 查找并更新订阅者状态
-        subscriber = Subscriber.objects(id=subscriber_id).first()
-        
-        if not subscriber:
-            return jsonify({'error': '未找到订阅者'}), 404
-            
-        # 如果已经取消订阅，直接重定向
-        if not subscriber.confirmed:
-            return redirect(f"{current_app.config['FRONTEND_URL']}/unsubscribed")
-            
-        # 删除订阅者
-        subscriber.delete()
-        
-        # 重定向到前端的取消订阅成功页面
-        return redirect(f"{current_app.config['FRONTEND_URL']}/unsubscribed")
-        
+        _resend().update_contact(subscriber.email, unsubscribed=True)
     except Exception as e:
-        logging.error(f"Unsubscribe error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        # 不报给用户：下次群发前的同步会把 Resend 补成退订
+        logging.error(f"Resend unsubscribe failed for {subscriber.email}: {str(e)}")
+        
+    return jsonify({'already': False})
     
     
 ########################
 # Email Service Routes #
 ########################
 
+NEWSLETTER_FROM_NAME = '太长不看 | 科技日推'
+
+
 @bp.route('/api/test/send_newsletter', methods=['POST'])
 def test_send_newsletter():
     try:
+        # 每调一次都占 Resend 每日的 transactional 额度，不鉴权会被刷光，确认邮件就发不出去了
+        expected_key = current_app.config.get('NEWSLETTER_API_KEY')
+        if not expected_key or request.headers.get('X-API-Key') != expected_key:
+            return jsonify({'error': '未授权的请求'}), 401
+
         latest_newsletter = DailyNewsletter.objects.order_by('-date').first()
         
         if not latest_newsletter:
@@ -514,26 +568,22 @@ def test_send_newsletter():
             
         subject = f"[{latest_newsletter.generated_title}] {latest_newsletter.date.strftime('%Y-%m-%d')}"
         
-        # 创建 Mailgun 服务实例
-        mailgun = MailgunService(
-            current_app.config['MAILGUN_API_KEY'],
-            current_app.config['MAILGUN_DOMAIN']
-        )
-        
-        # 使用 mailgun 实例生成 HTML
-        html_content = mailgun.generate_newsletter_html(latest_newsletter)
+        html_content = generate_newsletter_html(latest_newsletter, current_app.config['FRONTEND_URL'])
+        # transactional 邮件不会替换 contact 占位符，换成一个一眼能看出是假的 token
+        html_content = html_content.replace(UNSUBSCRIBE_TOKEN_PLACEHOLDER, 'TEST-TOKEN-NOT-REAL')
         
         test_email = "jizhoutang@outlook.com"
-        response = mailgun.send_daily_newsletter(
-            [test_email],
+        email_id = _resend().send_email(
+            test_email,
             subject,
-            html_content
+            html_content,
+            from_name=NEWSLETTER_FROM_NAME,
+            from_local='newsletter',
         )
         
         return jsonify({
             'message': f'测试邮件已发送至 {test_email}',
-            'status_code': response.status_code,
-            'response_text': response.text
+            'email_id': email_id
         })
         
     except Exception as e:
@@ -542,38 +592,43 @@ def test_send_newsletter():
     
     
 def _send_newsletter_to_subscribers(newsletter):
-    """把指定的 newsletter 发送给所有已确认订阅者"""
-    confirmed_subscribers = Subscriber.objects(confirmed=True).all()
-    subscriber_emails = [s.email for s in confirmed_subscribers]
+    """先同步 Mongo 和 Resend，再用 Resend Broadcast 发给 segment 里所有订阅中的 contact"""
+    client = _resend()
 
-    if not subscriber_emails:
+    sync_counts = None
+    try:
+        sync_counts = run_sync(client).counts()
+    except Exception as e:
+        # 同步失败不该挡住当天的简报
+        logging.error(f"Subscriber sync before newsletter failed: {str(e)}")
+
+    subscriber_count = Subscriber.get_active_subscribers().count()
+
+    if not subscriber_count:
         return jsonify({'message': '没有已确认的订阅者'}), 200
 
-    subject = f"[{newsletter.generated_title}] {newsletter.date.strftime('%Y-%m-%d')}"
+    date_str = newsletter.date.strftime('%Y-%m-%d')
+    subject = f"[{newsletter.generated_title}] {date_str}"
+    html_content = generate_newsletter_html(newsletter, current_app.config['FRONTEND_URL'])
 
-    mailgun = MailgunService(
-        current_app.config['MAILGUN_API_KEY'],
-        current_app.config['MAILGUN_DOMAIN']
-    )
-
-    html_content = mailgun.generate_newsletter_html(newsletter)
-
-    response = mailgun.send_daily_newsletter(
-        subscriber_emails,
+    broadcast_id = client.send_broadcast(
         subject,
-        html_content
+        html_content,
+        name=f"TLDR {date_str}",
+        from_name=NEWSLETTER_FROM_NAME,
+        from_local='newsletter',
     )
 
-    if response.status_code == 200:
-        newsletter.email_sent_at = datetime.utcnow()
-        newsletter.save()
+    newsletter.email_sent_at = datetime.utcnow()
+    newsletter.email_broadcast_id = broadcast_id
+    newsletter.save()
 
     return jsonify({
-        'message': f'成功发送每日新闻给 {len(subscriber_emails)} 位订阅者',
-        'date': newsletter.date.strftime('%Y-%m-%d'),
-        'subscriber_count': len(subscriber_emails),
-        'status_code': response.status_code,
-        'response_text': response.text
+        'message': f'成功发送每日新闻给 {subscriber_count} 位订阅者',
+        'date': date_str,
+        'subscriber_count': subscriber_count,
+        'broadcast_id': broadcast_id,
+        'sync': sync_counts
     })
 
 
@@ -670,8 +725,8 @@ def cron_send_newsletter():
 @bp.route('/api/subscriber-count', methods=['GET'])
 def get_subscriber_count():
     try:
-        # 获取已确认的订阅者数量
-        confirmed_subscribers_count = Subscriber.objects(confirmed=True).count()
+        # 获取已确认且未退订的订阅者数量
+        confirmed_subscribers_count = Subscriber.get_active_subscribers().count()
         base_count = 4738  # 基础数量
         total_count = base_count + confirmed_subscribers_count
         
