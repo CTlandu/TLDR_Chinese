@@ -8,6 +8,7 @@ class DailyNewsletter(db.Document):
     created_at = db.DateTimeField(default=datetime.utcnow)
     generated_title = db.StringField()
     email_sent_at = db.DateTimeField()  # 邮件群发时间，用于防止同一期重复发送
+    email_broadcast_id = db.StringField()  # Resend broadcast id
     
     meta = {
         'collection': 'newsletters',

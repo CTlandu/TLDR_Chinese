@@ -15,8 +15,9 @@ VITE_API_URL
 #### ✅ 必须设置：
 ```bash
 MONGODB_URI=你的MongoDB连接字符串
-MAILGUN_API_KEY=你的Mailgun密钥
-MAILGUN_DOMAIN=你的Mailgun域名
+RESEND_API_KEY=你的Resend密钥（Full access）
+RESEND_SEGMENT_ID=Resend里每日简报segment的id
+MAIL_FROM_DOMAIN=tldrnewsletter.cn
 DEEPSEEK_API_KEY=你的DeepSeek密钥
 ERNIE_API_KEY=你的百度API密钥
 ERNIE_SECRET_KEY=你的百度Secret密钥

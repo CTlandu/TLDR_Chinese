@@ -25,8 +25,9 @@ git push origin main
 
 ```
 MONGODB_URI=mongodb+srv://...
-MAILGUN_API_KEY=key-xxx
-MAILGUN_DOMAIN=mg.yourdomain.com
+RESEND_API_KEY=re_xxx
+RESEND_SEGMENT_ID=xxx
+MAIL_FROM_DOMAIN=tldrnewsletter.cn
 DEEPSEEK_API_KEY=sk-xxx
 ERNIE_API_KEY=your-key
 ERNIE_SECRET_KEY=your-secret
